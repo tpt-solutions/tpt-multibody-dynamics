@@ -1,0 +1,139 @@
+# tpt-multibody-dynamics Specification
+
+## 1. Purpose
+A workspace for advanced multibody dynamics (MBD), providing engineering-grade forward/inverse kinematics, holonomic/non-holonomic joint constraints, flexible body reduction, and contact mechanics. It elevates the basic rigid-body simulation in `tpt-sci-physics-rigid` to a level suitable for mechanical design validation, robotics, vehicle dynamics, and biomechanics. All implementations are from scratch in pure Rust with no external multibody library dependencies (no Rapier, no PhysX, no MuJoCo bindings), ensuring full numerical control, deterministic reproducibility for safety-critical applications (medical robots, aerospace mechanisms), and WASM compatibility for browser-based design tools. The workspace bridges the gap between `tpt-math-spatial` (pure 6D spatial algebra) and `tpt-fem` (continuum mechanics) by providing the reduced-order flexible body and joint constraint machinery needed for system-level mechanical simulation.
+
+## 2. Scope & Boundaries
+- IN SCOPE: Denavit-Hartenberg (DH) and Product of Exponentials (PoE) kinematics, forward/inverse kinematics solvers, Jacobian computation (geometric and analytical), holonomic constraint formulation (revolute, prismatic, spherical, universal, cylindrical, planar, fixed), non-holonomic constraints (rolling wheels, gears), constraint stabilization (Baumgarte, coordinate partitioning, Baumgarte's stabilized index-3 DAE), Craig-Bampton component mode synthesis (CMS) for flexible multibody dynamics, modal superposition, Hertzian contact mechanics, penalty and augmented Lagrangian contact methods, continuous collision detection (CCD), and spatial vector algebra (Featherstone's 6D formulation).
+- OUT OF SCOPE: Soft-body continuum FEM with large deformations (delegated to `tpt-fem-elasticity` and `tpt-fem-plasticity`), computational fluid-structure interaction (FSI) with mesh deformation (delegated to `tpt-phys-fsi`), granular flow with thousands of particles (delegated to `tpt-phys-dem`), or molecular-scale dynamics (delegated to `tpt-sci-md`).
+- DEPENDS ON: `tpt-math-geometry`, `tpt-math-spatial`, `tpt-math-linalg-fixed`, `tpt-math-linalg`, `tpt-math-linalg-dense`, `tpt-math-numeric`, `tpt-math-optimize-general`, `tpt-math-units`, `tpt-sci-physics-rigid`, `tpt-fem-mesh`, `tpt-fem-elasticity`, `tpt-fem-eigen`.
+
+## 3. Crate Inventory
+
+### Core Infrastructure
+
+#### `tpt-mbd-core`
+The foundation layer defining the canonical representation of multibody systems using Featherstone's spatial vector algebra. Provides 6D spatial vector types: `SpatialVelocity` (twist: angular + linear velocity), `SpatialForce` (wrench: torque + force), `SpatialMomentum`, and `SpatialInertia` (6×6 spatial mass matrix with mass, center of mass, and rotational inertia). Includes spatial cross-product operators (motion cross-product `v×` and force cross-product `v×*`) for efficient rigid-body dynamics computation without coordinate transformations. Defines the `RigidBody` type with spatial inertia, reference frame, and collision geometry. Provides coordinate frame types: `Frame` (origin + orientation using unit quaternions), `Isometry3` (rigid transformation), and `TransformTree` for hierarchical body connections. Includes generalized coordinate types: `GeneralizedCoordinates` (joint angles/positions), `GeneralizedVelocities` (joint rates), and `GeneralizedAccelerations`. Provides inertia operations: spatial inertia composition, transformation between frames, and conversion to/from 3×3 rotational inertia about center of mass. All core types are `no_std` compatible with optional `alloc` support for dynamic system sizes. Includes unit-safe accessors using `tpt-math-units` for all physical quantities (length, mass, time, angle, angular velocity).
+
+### Kinematics
+
+#### `tpt-mbd-kinematics`
+Forward and inverse kinematics solvers for serial and parallel kinematic chains. Implements Denavit-Hartenberg (DH) parameter convention (standard and modified DH) for systematic description of serial manipulators with `DhChain` type containing link lengths, link twists, link offsets, and joint angles. Provides Product of Exponentials (PoE) formulation using screw theory: exponential map of twists for forward kinematics, screw axes for each joint, and product of exponentials formula `T = exp(ξ₁θ₁) exp(ξ₂θ₂) ... exp(ξₙθₙ) M` where M is the home configuration. Includes forward kinematics: compute end-effector pose given joint coordinates, with O(n) efficiency for serial chains using recursive transformation composition. Provides Jacobian computation: geometric Jacobian (relating joint velocities to end-effector spatial velocity in base frame) and analytical Jacobian (relating joint velocities to end-effector velocity in end-effector frame), with efficient O(n) algorithms using recursive Newton-Euler-style propagation. Implements inverse kinematics solvers: Newton-Raphson with damped least squares (Levenberg-Marquardt) for redundant manipulators, Jacobian transpose method for gradient-based IK, closed-form solutions for 6-DOF industrial manipulators with spherical wrists (PUMA-style kinematic decoupling), and numerical IK with task-space tracking for parallel mechanisms. Includes singularity detection: manipulability measure (determinant of JJᵀ), condition number of Jacobian, and distance to nearest singularity using eigenvalue analysis. Provides workspace analysis: reachable workspace boundary computation using boundary tracing, and dexterous workspace identification. Supports both open-chain (serial) and closed-chain (parallel, four-bar, Stewart platform) topologies with loop-closure constraint handling. All kinematics operations are unit-safe and support both radians and degrees for angular quantities.
+
+### Joints & Constraints
+
+#### `tpt-mbd-joints`
+Joint constraint formulation and stabilization for multibody systems with holonomic and non-holonomic constraints. Implements joint types: revolute (1 DOF rotation about axis), prismatic (1 DOF translation along axis), spherical/ball (3 DOF rotation, 0 translation), universal/Cardan (2 DOF rotation), cylindrical (1 DOF rotation + 1 DOF translation), planar (2 DOF translation + 1 DOF rotation), fixed (0 DOF, rigid connection), and custom user-defined joints via the `JointConstraint` trait. Provides constraint formulation using generalized coordinates: constraint equations Φ(q) = 0, constraint Jacobian Φ_q = ∂Φ/∂q, and constraint violation metrics. Includes constraint stabilization methods: Baumgarte stabilization (adding proportional-derivative terms to constraint acceleration equation: Φ̈ + 2αΦ̇ + β²Φ = 0 with tunable α, β parameters), coordinate partitioning (partitioning coordinates into independent/dependent sets and solving constraint equations using Newton-Raphson at each time step), and augmented Lagrangian methods (combining penalty and Lagrange multiplier approaches for improved numerical stability). Supports non-holonomic constraints: rolling without slipping (velocity-level constraints that cannot be integrated to position level), gear constraints (linear relationship between joint velocities), and custom velocity-level constraints via the `NonholonomicConstraint` trait. Provides constraint force computation: Lagrange multipliers λ from the constrained equations of motion Mq̈ + Φ_qᵀλ = τ, with physical interpretation as joint reaction forces/torques. Includes joint limit handling: soft limits using spring-damper penalty forces, hard limits using constraint formulation, and joint friction (Coulomb + viscous) using regularization techniques. Provides constraint drift detection and correction: monitor constraint violation norm ||Φ|| and trigger re-projection when exceeding threshold. All constraint formulations are compatible with index-3 DAE solvers and support both minimal coordinate (reduced) and maximal coordinate (redundant) formulations.
+
+### Flexible Bodies
+
+#### `tpt-mbd-flexible`
+Flexible multibody dynamics using component mode synthesis (CMS) for efficient simulation of bodies with elastic deformation. Implements Craig-Bampton method: partition finite element degrees of freedom into boundary (interface) DOFs and interior DOFs, compute fixed-interface normal modes (eigenvectors of K_ii with boundary fixed) and constraint modes (static shapes from unit boundary displacements), and assemble reduced mass and stiffness matrices in modal coordinates. Provides modal superposition: represent flexible body deformation as linear combination of mode shapes with time-varying modal coordinates, reducing thousands of FE DOFs to tens of modal coordinates. Includes mode selection: automatic selection of dominant modes based on frequency cutoff or modal participation factors, and modal truncation error estimation. Supports floating frame formulation: large rigid-body motion superimposed with small elastic deformation, with Coriolis and centrifugal coupling terms computed using modal integrals (consistent mass matrix projection). Provides absolute nodal coordinate formulation (ANCF) for large deformation flexible bodies with gradient-deficient beam/shell elements, suitable for highly flexible structures (soft robotics, deployable space structures). Includes interface to `tpt-fem-elasticity`: import FE mesh, mass matrix M, stiffness matrix K, and mode shapes from FEM analysis; export reduced matrices for multibody simulation. Provides modal damping: Rayleigh damping (αM + βK) projected onto modal coordinates, and modal damping ratios for each mode. Supports geometric nonlinearity: stress stiffening (stress-dependent stiffness matrix updates) and spin softening (centrifugal force effects on stiffness) for rotating flexible bodies (turbine blades, helicopter rotors). All flexible body formulations maintain energy consistency and support both linear and nonlinear elastic regimes.
+
+### Contact & Collision
+
+#### `tpt-mbd-contact`
+Contact mechanics and collision detection for multibody systems with intermittent contact, impact, and friction. Implements continuous collision detection (CCD) using swept-volume methods: conservative advancement for convex shapes, adaptive bisection for general shapes, and speculative contacts for high-speed impacts. Provides discrete collision detection: GJK (Gilbert-Johnson-Keerthi) algorithm for convex shape intersection, EPA (Expanding Polytope Algorithm) for penetration depth and contact normal computation, and bounding volume hierarchies (AABB trees, OBB trees) for broad-phase pruning. Includes contact geometry: contact point computation, contact normal, penetration depth, and contact manifold generation for multiple contact points. Provides contact force models: Hertzian contact for elastic bodies (F = kδ^n with n=1.5 for spheres, n=1 for cylinders), nonlinear Hertz with damping (Hunt-Crossley model: F = kδ^n + cδ̇), penalty method (spring-damper at contact: F_n = k_p δ - c_p δ̇), and augmented Lagrangian method (combining penalty and constraint approaches for improved stability). Supports friction modeling: Coulomb friction (F_t ≤ μF_n) with regularization for numerical stability (smooth friction law: F_t = μF_n tanh(v_t/v_s) with smoothing velocity v_s), static/kinetic friction transition with Stribeck effect, and anisotropic friction for textured surfaces. Includes impact handling: coefficient of restitution for energy loss during impact, impulse-based collision response for rigid bodies, and soft impact modeling using high-stiffness penalty springs. Provides contact constraint stabilization: constraint-based contact formulation using complementarity conditions (0 ≤ λ_n ⊥ Φ(q) ≥ 0) solved using projected Gauss-Seidel or Lemke's algorithm for frictional contact. Supports wear modeling: Archard wear law (volume loss proportional to contact pressure and sliding distance) for long-term contact simulation. All contact computations are unit-safe and support both 2D and 3D geometries with primitive shapes (sphere, box, cylinder, capsule, cone) and triangle mesh representations.
+
+### System Assembly & Simulation
+
+#### `tpt-mbd-system`
+System-level assembly and time integration for complete multibody simulations. Implements system assembly: combine multiple rigid bodies, joints, constraints, contact pairs, and flexible bodies into a unified `MultibodySystem` with automatic DOF counting and constraint indexing. Provides equations of motion formulation: minimal coordinate formulation (reduce to independent DOFs using constraint Jacobian null-space), maximal coordinate formulation (solve index-3 DAE with Lagrange multipliers), and recursive formulations (Featherstone's articulated body algorithm for O(n) forward dynamics of tree-topology systems). Includes time integration methods: explicit methods (semi-implicit Euler, Verlet, RATTLE for constrained systems) for real-time applications, implicit methods (generalized-α method, HHT-α method, Newmark-β) for stiff systems with high-frequency dissipation control, and energy-momentum conserving integrators for long-term stability. Provides external force application: gravity, applied forces/torques, spring-damper elements, prescribed motion (kinematic drivers), and force elements (bushings, actuators, muscles). Supports actuator modeling: ideal actuators (prescribed force or motion), DC motor models with electrical dynamics, hydraulic actuators with fluid compressibility, and muscle models (Hill-type muscle with activation dynamics). Includes system linearization: compute linearized state-space model around operating point for control design and stability analysis. Provides sensitivity analysis: compute derivatives of system response with respect to parameters (design optimization, uncertainty quantification). Supports co-simulation: couple with `tpt-em-circuit` for electromechanical systems, `tpt-thermo` for thermo-mechanical coupling, and `tpt-opt-systems` for design optimization. All system operations are thread-safe and support parallel evaluation of independent subsystems.
+
+### Umbrella
+
+#### `tpt-mbd`
+Feature-gated umbrella crate that re-exports all multibody dynamics solvers and utilities. Each solver category is an optional Cargo feature (e.g., `features = ["kinematics", "joints", "flexible", "contact"]`), allowing downstream users to pull in only the capabilities they need. Compiling without any features yields a minimal crate that only re-exports `tpt-mbd-core`. The feature tree is flat to avoid Cargo feature unification surprises. Provides convenience constructors and builder patterns for common workflows (e.g., `MultibodySystem::builder().add_body(body).add_joint(joint).build()`). Includes a unified `MbdError` type that wraps solver-specific errors with context about which component failed and why (e.g., `KinematicsError::SingularConfiguration { manipulability: f64 }`, `ContactError::PenetrationTooLarge { depth: f64 }`). Provides high-level API functions for common analyses (e.g., `forward_kinematics(chain, joint_angles)`, `inverse_dynamics(system, q, qdot, qddot)`) that automatically select appropriate numerical methods. Includes visualization utilities: export system configuration to VTK format for ParaView visualization, and simple OpenGL rendering hooks for real-time animation.
+
+## 4. Design Principles
+
+### Spatial Vector Algebra
+All rigid-body dynamics computations use Featherstone's spatial vector algebra for efficiency and numerical robustness:
+- **6D spatial vectors**: Combine angular and linear quantities into single 6D entities (e.g., spatial velocity = [ω; v], spatial force = [τ; f])
+- **Spatial cross-products**: Motion cross-product `v×` and force cross-product `v×*` for efficient computation of Coriolis, centrifugal, and gyroscopic terms
+- **Spatial inertia**: 6×6 spatial mass matrix capturing mass, center of mass, and rotational inertia in a single entity
+- **Efficiency**: Spatial algebra reduces coordinate transformations and enables O(n) recursive algorithms for tree-topology systems
+
+This is critical for real-time simulation of complex systems (humanoid robots with 30+ DOFs, vehicle suspensions with 20+ bodies).
+
+### Singularity Handling
+Kinematic and dynamic solvers must detect and gracefully handle singular configurations:
+- **Kinematic singularities**: Detect when Jacobian becomes rank-deficient (manipulability < threshold) and switch to damped least-squares IK or warn the user
+- **Dynamic singularities**: Detect when mass matrix becomes ill-conditioned and use regularization (add small diagonal term εI) or switch to robust factorization
+- **Gimbal lock**: Use unit quaternions for orientation representation to avoid Euler angle singularities, and provide quaternion normalization at each time step
+- **Configuration validation**: Check for invalid configurations (e.g., joint limits violated, link lengths inconsistent) before attempting kinematic/dynamic computation
+
+All solvers return structured errors with diagnostic information:
+```rust
+pub enum KinematicsError {
+    SingularConfiguration { manipulability: f64, condition_number: f64 },
+    NoSolution { target: Isometry3, closest_solution: Vec<f64>, error: f64 },
+    JointLimitViolation { joint: usize, value: f64, limit: (f64, f64) },
+}
+
+Energy Conservation
+Time integration for unconstrained systems should preserve energy and momentum for long-term stability:
+Symplectic integrators: Use symplectic Euler or Verlet for conservative systems (no damping, no external forces) to preserve Hamiltonian structure
+Energy-momentum methods: Use discrete gradient methods for systems with potential energy to exactly conserve energy
+Dissipation control: For systems with damping, use integrators with controllable high-frequency dissipation (generalized-α method with ρ_∞ parameter) to damp spurious high-frequency oscillations while preserving low-frequency dynamics
+Monitoring: Track total energy (kinetic + potential) at each time step and warn if energy drift exceeds threshold
+This is critical for long-duration simulations (orbital mechanics, molecular dynamics, structural vibration) where energy drift leads to unphysical results.
+Seamless FEM Integration
+tpt-mbd-flexible must integrate seamlessly with tpt-fem for flexible body simulation:
+Mesh import: Import FE mesh from tpt-fem-mesh with node coordinates, element connectivity, and material properties
+Matrix import: Import mass matrix M and stiffness matrix K from tpt-fem-elasticity in sparse format
+Mode import: Import mode shapes and natural frequencies from tpt-fem-eigen for modal reduction
+Boundary definition: Allow user to specify interface nodes (boundary DOFs) for Craig-Bampton reduction
+Coordinate mapping: Map between FE nodal coordinates and multibody generalized coordinates using constraint equations
+This enables a complete workflow: design geometry → mesh with tpt-fem → compute modes → simulate with tpt-mbd → visualize results.
+Numerical Stability
+Constraint stabilization and contact resolution must maintain numerical stability:
+Constraint drift: Monitor constraint violation ||Φ|| and trigger re-projection when exceeding threshold (default 1e-6)
+Baumgarte parameters: Provide automatic tuning of Baumgarte stabilization parameters (α, β) based on system natural frequency and time step
+Contact stiffness: Adaptive penalty stiffness based on body inertia and expected contact force to avoid ill-conditioning
+Friction regularization: Use smooth friction laws to avoid discontinuities that cause solver divergence
+Impact handling: Detect high-velocity impacts and switch to impulse-based resolution or reduce time step
+All solvers provide convergence diagnostics: iteration count, residual norm, and constraint violation history.
+Performance
+Recursive algorithms: Use O(n) recursive Newton-Euler and articulated body algorithms for tree-topology systems instead of O(n³) matrix factorization
+Sparse matrices: Exploit sparsity in mass, stiffness, and Jacobian matrices using CSR format and sparse solvers
+Parallelism: Evaluate independent kinematic chains and contact pairs in parallel using Rayon
+Caching: Cache Jacobian factorizations and mode shapes across time steps when possible
+Memory efficiency: Use stack-allocated arrays for small systems (< 100 DOFs) and pre-allocated vectors for larger systems
+Validation & Testing
+All MBD implementations must be validated against established references:
+Kinematics validation: Compare forward/inverse kinematics against analytical solutions for standard manipulators (PUMA 560, KUKA KR6, Stanford arm)
+Dynamics validation: Compare forward dynamics against recursive Newton-Euler and Lagrangian formulations for benchmark problems (double pendulum, acrobot, cart-pole)
+Constraint validation: Verify constraint satisfaction (||Φ|| < tolerance) and energy conservation for constrained systems (pendulum, four-bar linkage, slider-crank)
+Flexible body validation: Compare Craig-Bampton results against full FE simulation for benchmark problems (cantilever beam, rotating plate, flexible manipulator)
+Contact validation: Compare contact forces against Hertzian analytical solutions for sphere-sphere, sphere-plane, and cylinder-cylinder contacts
+Benchmark comparison: Compare against commercial MBD software (Adams, Simpack, RecurDyn) for industry-standard test cases
+5. Build Order
+tpt-mbd-core (spatial vectors, frames, inertia types)
+tpt-mbd-kinematics (DH, PoE, forward/inverse kinematics, Jacobians)
+tpt-mbd-joints (joint types, constraint formulation, Baumgarte stabilization)
+tpt-mbd-contact (collision detection, Hertzian contact, friction, impact)
+tpt-mbd-flexible (Craig-Bampton, modal superposition, FEM integration)
+tpt-mbd-system (system assembly, equations of motion, time integration)
+tpt-mbd (umbrella with feature gates, convenience API, visualization)
+6. Testing Strategy
+Kinematics validation: Compare forward kinematics against analytical solutions for 10+ standard manipulators (PUMA 560, KUKA, Stanford). Compare inverse kinematics against closed-form solutions where available. Target accuracy: position < 1e-9 m, orientation < 1e-9 rad for forward kinematics; convergence to < 1e-6 m for inverse kinematics.
+Dynamics validation: Compare forward dynamics against Lagrangian formulation for 20+ benchmark problems (pendulum, double pendulum, acrobot, cart-pole, gyroscope). Target accuracy: energy conservation < 1e-6 over 1000 time steps for conservative systems.
+Constraint validation: Verify constraint satisfaction for 15+ constrained systems (pendulum, four-bar, slider-crank, Stewart platform). Target accuracy: ||Φ|| < 1e-6, energy drift < 1e-4 over 10000 time steps.
+Flexible body validation: Compare Craig-Bampton results against full FE simulation for 10+ benchmark problems (cantilever beam, rotating plate, flexible manipulator). Target accuracy: tip displacement < 2% error with 10 modes, natural frequencies < 1% error.
+Contact validation: Compare contact forces against Hertzian analytical solutions for sphere-sphere, sphere-plane, cylinder-cylinder contacts. Target accuracy: contact force < 5% error, contact area < 10% error.
+Friction validation: Compare friction force against analytical solutions for block-on-plane, rolling wheel, and brake pad contacts. Target accuracy: friction force < 10% error, stick-slip transition captured correctly.
+Performance benchmarks: Measure simulation time for systems of varying complexity (10, 100, 1000 DOFs). Target: real-time performance (1 kHz) for systems with < 100 DOFs on modern hardware.
+Numerical stability tests: Simulate stiff systems (high-frequency vibration, stiff contacts) and verify stability over long durations (100,000+ time steps).
+Regression testing: Track energy drift, constraint violation, and computation time across code changes to detect performance regressions.
+7. Tier 2 Consumption Model
+Each Tier 2 repository depends on tpt-mbd with only the features it needs:
+tpt-transportation: features = ["kinematics", "joints", "contact", "flexible"] for vehicle suspension dynamics, crash simulation, powertrain mechanics, and tire-road contact
+tpt-medical: features = ["kinematics", "joints", "contact"] for surgical robot kinematics, prosthetic limb dynamics, and tool-tissue interaction
+tpt-construction: features = ["kinematics", "joints", "contact", "flexible"] for crane and excavator kinematics, cable-pulley systems, and structural mechanism simulation
+tpt-materials: features = ["contact"] for granular contact mechanics and powder compaction simulation (coupled with tpt-phys-dem)
+tpt-earth: features = ["contact", "flexible"] for geological fault mechanics, landslide simulation, and flexible soil-structure interaction
+tpt-energy: features = ["kinematics", "joints", "flexible"] for wind turbine rotor dynamics, tidal turbine mechanics, and flexible solar panel tracking
+tpt-electronics: features = ["kinematics", "joints"] for MEMS device dynamics, connector insertion forces, and thermal expansion effects
+tpt-process: features = ["kinematics", "joints", "contact"] for valve actuator dynamics, pump mechanics, and conveyor system simulation
+This ensures minimal compile-time overhead and binary size for each domain while providing access to the full multibody dynamics toolkit when needed.
