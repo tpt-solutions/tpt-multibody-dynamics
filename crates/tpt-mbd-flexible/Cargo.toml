@@ -15,7 +15,7 @@ include = ["LICENSE-MIT", "LICENSE-APACHE", "README.md", "src/**/*"]
 name = "tpt_mbd_flexible"
 
 [dependencies]
-tpt-mbd-core = { path = "../../tpt-mbd-core", default-features = false }
+tpt-mbd-core = { path = "../tpt-mbd-core", default-features = false }
 tpt-fem-mesh = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-mesh", default-features = false }
 tpt-fem-elasticity = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-elasticity", default-features = false }
 tpt-fem-eigen = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-eigen", default-features = false }

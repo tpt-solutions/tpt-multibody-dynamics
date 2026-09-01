@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../../../README.md")]
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
@@ -12,5 +12,6 @@
 //! dynamic system sizes.
 
 pub mod frame;
-pub mod spatial;
 pub mod inertia;
+pub mod spatial;
+pub mod generalized;

@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../../../README.md")]
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
@@ -9,8 +9,8 @@
 //! handling, complementarity-based contact, and Archard wear.
 
 pub mod ccd;
-pub mod detection;
 pub mod contact;
+pub mod detection;
 pub mod friction;
 pub mod impact;
 pub mod wear;

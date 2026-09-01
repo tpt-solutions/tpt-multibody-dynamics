@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../../../README.md")]
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
@@ -8,7 +8,7 @@
 //! constraint equations, Baumgarte stabilization, coordinate partitioning,
 //! non-holonomic constraints, joint friction, and limit enforcement.
 
-pub mod joint;
 pub mod constraint;
-pub mod stabilization;
 pub mod friction;
+pub mod joint;
+pub mod stabilization;

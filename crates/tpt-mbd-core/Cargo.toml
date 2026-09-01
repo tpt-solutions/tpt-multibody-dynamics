@@ -23,12 +23,15 @@ alloc = ["tpt-math-spatial/alloc", "tpt-math-geometry/alloc", "tpt-math-units/al
 tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial", default-features = false }
 tpt-math-geometry = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-geometry", default-features = false }
 tpt-math-units = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-units", default-features = false }
+tpt-math-linalg-fixed = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-linalg-fixed", default-features = false }
+tpt-math-numeric = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-numeric", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial" }
 tpt-math-geometry = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-geometry" }
 tpt-math-units = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-units" }
+tpt-math-linalg-fixed = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-linalg-fixed" }
 
 [lints]
 workspace = true

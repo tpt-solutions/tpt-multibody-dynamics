@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../../../README.md")]
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
@@ -9,7 +9,7 @@
 //! Rayleigh damping, and seamless integration with `tpt-fem-elasticity`
 //! and `tpt-fem-eigen`.
 
-pub mod cms;
-pub mod floating_frame;
 pub mod ancf;
+pub mod cms;
 pub mod damping;
+pub mod floating_frame;
