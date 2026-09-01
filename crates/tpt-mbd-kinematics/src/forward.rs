@@ -133,7 +133,7 @@ impl SpatialVelocity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tpt_math_geometry::{Rotation3, Translation};
+    use tpt_math_geometry::Rotation3;
 
     #[test]
     fn forward_kinematics_single_joint() {

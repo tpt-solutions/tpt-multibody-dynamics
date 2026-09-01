@@ -360,14 +360,20 @@ pub fn solve_parallel_ik(
         for (i, (target, _jac)) in targets.iter().zip(jacobians.iter()).enumerate() {
             let (pos_err, rot_err) = pose_error(&poses[i], target);
             total_error += pos_err + rot_err;
-            error_vec[6 * i] = poses[i].translation.vector.data[0] - target.translation.vector.data[0];
-            error_vec[6 * i + 1] = poses[i].translation.vector.data[1] - target.translation.vector.data[1];
-            error_vec[6 * i + 2] = poses[i].translation.vector.data[2] - target.translation.vector.data[2];
+            error_vec[6 * i] =
+                poses[i].translation.vector.data[0] - target.translation.vector.data[0];
+            error_vec[6 * i + 1] =
+                poses[i].translation.vector.data[1] - target.translation.vector.data[1];
+            error_vec[6 * i + 2] =
+                poses[i].translation.vector.data[2] - target.translation.vector.data[2];
             let dr = poses[i].rotation.matrix();
             let tr = target.rotation.matrix();
-            error_vec[6 * i + 3] = 0.5 * (dr.data[1][2] - dr.data[2][1] - (tr.data[1][2] - tr.data[2][1]));
-            error_vec[6 * i + 4] = 0.5 * (dr.data[2][0] - dr.data[0][2] - (tr.data[2][0] - tr.data[0][2]));
-            error_vec[6 * i + 5] = 0.5 * (dr.data[0][1] - dr.data[1][0] - (tr.data[0][1] - tr.data[1][0]));
+            error_vec[6 * i + 3] =
+                0.5 * (dr.data[1][2] - dr.data[2][1] - (tr.data[1][2] - tr.data[2][1]));
+            error_vec[6 * i + 4] =
+                0.5 * (dr.data[2][0] - dr.data[0][2] - (tr.data[2][0] - tr.data[0][2]));
+            error_vec[6 * i + 5] =
+                0.5 * (dr.data[0][1] - dr.data[1][0] - (tr.data[0][1] - tr.data[1][0]));
         }
 
         // Constraint errors
@@ -382,7 +388,9 @@ pub fn solve_parallel_ik(
         }
 
         if total_error < opts.tolerance_position + opts.tolerance_orientation {
-            return IkResult::success(q, iter + 1,
+            return IkResult::success(
+                q,
+                iter + 1,
                 error_vec[..num_chains].iter().map(|e| e.abs()).sum::<f64>() / num_chains as f64,
                 error_vec[3..6].iter().map(|e| e.abs()).sum::<f64>() / 3.0,
             );
@@ -404,8 +412,16 @@ pub fn solve_parallel_ik(
             } else {
                 jac.linear_column((col_in_chain - 3) % jac.num_joints().min(3))
             };
-            let _j_idx = if col_in_chain < 3 { col_in_chain } else { col_in_chain - 3 + 3 };
-            let jac_col_idx = if col_in_chain < 3 { col_in_chain } else { col_in_chain - 3 };
+            let _j_idx = if col_in_chain < 3 {
+                col_in_chain
+            } else {
+                col_in_chain - 3 + 3
+            };
+            let jac_col_idx = if col_in_chain < 3 {
+                col_in_chain
+            } else {
+                col_in_chain - 3
+            };
             for k in 0..n {
                 let val = if jac_col_idx < jac.num_joints() {
                     if col_in_chain < 3 {
@@ -476,4 +492,3 @@ pub fn solve_loop_closure(
         .collect();
     solve_parallel_ik(&chains, targets, &vec![0.0; links.len()], constraints, opts)
 }
-

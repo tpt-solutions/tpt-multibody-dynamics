@@ -81,7 +81,11 @@ impl CraigBampton {
 
         // Fixed-interface modes: smallest eigenpairs of K_ii (with M_ii = I).
         let basis = if n_i > 0 && num_modes > 0 {
-            solve_eigenvalue_solve(k_ii.clone(), DMatrix::from_fn(n_i, n_i, |_, _| 1.0), num_modes)
+            solve_eigenvalue_solve(
+                k_ii.clone(),
+                DMatrix::from_fn(n_i, n_i, |_, _| 1.0),
+                num_modes,
+            )
         } else {
             ModalBasis {
                 eigenvalues: Vec::new(),
@@ -96,7 +100,8 @@ impl CraigBampton {
         let constraint_modes = if n_i > 0 && n_b > 0 {
             let mut psi_i = DMatrix::zeros(n_i, n_b);
             for j in 0..n_b {
-                let rhs: DVector<f64> = DVector::from_vec((0..n_i).map(|i| -k_ib[(i, j)]).collect());
+                let rhs: DVector<f64> =
+                    DVector::from_vec((0..n_i).map(|i| -k_ib[(i, j)]).collect());
                 if let Ok(sol) = k_ii.clone().solve(&rhs) {
                     for i in 0..n_i {
                         psi_i = with_elem(&psi_i, i, j, sol[i]);
@@ -116,13 +121,23 @@ impl CraigBampton {
             // Fixed-mode columns: [Φ_ii; 0]
             for col in 0..n_modes {
                 for i in 0..n_i {
-                    phi = with_elem(&phi, interior_dofs[i], col, fixed_modes[(interior_dofs[i], col)]);
+                    phi = with_elem(
+                        &phi,
+                        interior_dofs[i],
+                        col,
+                        fixed_modes[(interior_dofs[i], col)],
+                    );
                 }
             }
             // Constraint-mode columns: [Ψ_ib; I]
             for j in 0..n_b {
                 for i in 0..n_i {
-                    phi = with_elem(&phi, interior_dofs[i], n_modes + j, constraint_modes[(interior_dofs[i], j)]);
+                    phi = with_elem(
+                        &phi,
+                        interior_dofs[i],
+                        n_modes + j,
+                        constraint_modes[(interior_dofs[i], j)],
+                    );
                 }
                 phi = with_elem(&phi, fixed_dofs[j], n_modes + j, 1.0);
             }
@@ -155,7 +170,13 @@ impl CraigBampton {
 fn with_elem(m: &DMatrix<f64>, row: usize, col: usize, val: f64) -> DMatrix<f64> {
     let nrows = m.nrows();
     let ncols = m.ncols();
-    DMatrix::from_fn(nrows, ncols, |i, j| if i == row && j == col { val } else { m[(i, j)] })
+    DMatrix::from_fn(nrows, ncols, |i, j| {
+        if i == row && j == col {
+            val
+        } else {
+            m[(i, j)]
+        }
+    })
 }
 
 /// Project the full FE mass and stiffness matrices onto a Craig-Bampton modal
@@ -187,11 +208,7 @@ pub fn reduce_system(
 ///
 /// Returns the eigenvalues and the corresponding eigenvectors as columns of a
 /// `DMatrix`. The eigenvectors are `M`-orthonormal (`Xᵀ M X = I`).
-pub fn solve_eigenvalue_solve(
-    k: DMatrix<f64>,
-    m: DMatrix<f64>,
-    num_modes: usize,
-) -> ModalBasis {
+pub fn solve_eigenvalue_solve(k: DMatrix<f64>, m: DMatrix<f64>, num_modes: usize) -> ModalBasis {
     let n = k.nrows();
     if n == 0 || num_modes == 0 {
         return ModalBasis {
@@ -232,9 +249,9 @@ pub fn solve_eigenvalue_solve(
     let mut sorted_evecs = vec![vec![0.0; n]; take];
     for (new_i, &old_i) in idx.iter().take(take).enumerate() {
         sorted_eig.push(eig[old_i]);
-                    for r in 0..n {
-                        sorted_evecs[new_i][r] = evecs[r][old_i];
-                    }
+        for r in 0..n {
+            sorted_evecs[new_i][r] = evecs[r][old_i];
+        }
     }
 
     // Back-transform eigenvectors: x = L⁻ᵀ y.
@@ -325,13 +342,17 @@ pub fn select_modes(
 // ---------------------------------------------------------------------------
 
 fn identity_dense(n: usize) -> Vec<Vec<f64>> {
-    (0..n).map(|i| (0..n).map(|j| if i == j { 1.0 } else { 0.0 }).collect()).collect()
+    (0..n)
+        .map(|i| (0..n).map(|j| if i == j { 1.0 } else { 0.0 }).collect())
+        .collect()
 }
 
 fn mat_to_vecvec(m: &DMatrix<f64>) -> Vec<Vec<f64>> {
     let n = m.nrows();
     let p = m.ncols();
-    (0..n).map(|i| (0..p).map(|j| m[(i, j)]).collect()).collect()
+    (0..n)
+        .map(|i| (0..p).map(|j| m[(i, j)]).collect())
+        .collect()
 }
 
 fn vecvec_to_mat(data: &[Vec<f64>]) -> DMatrix<f64> {
@@ -542,10 +563,8 @@ mod tests {
             4,
             4,
             &[
-                2.0, -1.0, 0.0, 0.0,
-                -1.0, 2.0, -1.0, 0.0,
-                0.0, -1.0, 2.0, -1.0,
-                0.0, 0.0, -1.0, 2.0,
+                2.0, -1.0, 0.0, 0.0, -1.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0, -1.0, 0.0, 0.0, -1.0,
+                2.0,
             ],
         );
         let mut mesh_builder = tpt_fem_mesh::MeshBuilder::new();
@@ -579,10 +598,8 @@ mod tests {
             4,
             4,
             &[
-                2.0, -1.0, 0.0, 0.0,
-                -1.0, 2.0, -1.0, 0.0,
-                0.0, -1.0, 2.0, -1.0,
-                0.0, 0.0, -1.0, 2.0,
+                2.0, -1.0, 0.0, 0.0, -1.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0, -1.0, 0.0, 0.0, -1.0,
+                2.0,
             ],
         );
         let mut mesh_builder = tpt_fem_mesh::MeshBuilder::new();
@@ -621,10 +638,7 @@ mod tests {
             4,
             4,
             &[
-                1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 1.0,
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
             ],
         );
         let sel = ModeSelection {

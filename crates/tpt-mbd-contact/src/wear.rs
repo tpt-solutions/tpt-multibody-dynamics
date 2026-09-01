@@ -82,19 +82,27 @@ mod tests {
 
     #[test]
     fn test_wear_zero_hardness() {
-        let rate = compute_wear_rate(1e6, 0.01, &WearParams {
-            wear_coefficient: 1e-6,
-            hardness: 0.0,
-        });
+        let rate = compute_wear_rate(
+            1e6,
+            0.01,
+            &WearParams {
+                wear_coefficient: 1e-6,
+                hardness: 0.0,
+            },
+        );
         assert_eq!(rate, 0.0);
     }
 
     #[test]
     fn test_wear_zero_velocity() {
-        let rate = compute_wear_rate(1e6, 0.0, &WearParams {
-            wear_coefficient: 1e-6,
-            hardness: 1.0e9,
-        });
+        let rate = compute_wear_rate(
+            1e6,
+            0.0,
+            &WearParams {
+                wear_coefficient: 1e-6,
+                hardness: 1.0e9,
+            },
+        );
         assert_eq!(rate, 0.0);
     }
 

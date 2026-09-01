@@ -229,4 +229,3 @@ fn eigenvalues_symmetric_6x6(a: &[[f64; 6]; 6]) -> [f64; 6] {
 
     eigenvalues
 }
-

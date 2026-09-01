@@ -118,8 +118,7 @@ impl SpringDamper {
         let qi_off = bi * 6;
         let qj_off = bj * 6;
 
-        let dx = q.get(qi_off).copied().unwrap_or(0.0)
-            - q.get(qj_off).copied().unwrap_or(0.0)
+        let dx = q.get(qi_off).copied().unwrap_or(0.0) - q.get(qj_off).copied().unwrap_or(0.0)
             + pi[0]
             - pj[0];
         let dy = q.get(qi_off + 1).copied().unwrap_or(0.0)
@@ -134,8 +133,8 @@ impl SpringDamper {
         let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(1e-12);
         let direction = 1.0 / dist;
 
-        let vi_x = qdot.get(qi_off).copied().unwrap_or(0.0)
-            - qdot.get(qj_off).copied().unwrap_or(0.0);
+        let vi_x =
+            qdot.get(qi_off).copied().unwrap_or(0.0) - qdot.get(qj_off).copied().unwrap_or(0.0);
         let vi_y = qdot.get(qi_off + 1).copied().unwrap_or(0.0)
             - qdot.get(qj_off + 1).copied().unwrap_or(0.0);
         let vi_z = qdot.get(qi_off + 2).copied().unwrap_or(0.0)
@@ -181,11 +180,7 @@ pub struct PrescribedMotion {
 
 impl PrescribedMotion {
     /// Create a new prescribed motion driver.
-    pub fn new<F, G>(
-        body_index: usize,
-        prescribed_q: F,
-        prescribed_qdot: G,
-    ) -> Self
+    pub fn new<F, G>(body_index: usize, prescribed_q: F, prescribed_qdot: G) -> Self
     where
         F: Fn(f64) -> [f64; 3] + 'static,
         G: Fn(f64) -> [f64; 3] + 'static,
@@ -211,9 +206,9 @@ impl PrescribedMotion {
 mod tests {
     use super::*;
     use crate::system::MultibodySystem;
-    use tpt_mbd_core::{SpatialInertia, RigidBody};
-    use tpt_mbd_core::frame::Isometry3;
     use tpt_math_linalg_fixed::{Matrix3, Vector3};
+    use tpt_mbd_core::frame::Isometry3;
+    use tpt_mbd_core::{RigidBody, SpatialInertia};
 
     #[test]
     fn gravity_force_direction_check() {
@@ -230,7 +225,11 @@ mod tests {
         let g = Gravity::new(9.81);
         let q = vec![0.0f64; sys.num_dofs];
         let tau = g.apply(&sys, &q);
-        assert!(tau[2] < 0.0, "gravity z-force must be negative, got {}", tau[2]);
+        assert!(
+            tau[2] < 0.0,
+            "gravity z-force must be negative, got {}",
+            tau[2]
+        );
         assert_eq!(tau[0], 0.0);
         assert_eq!(tau[1], 0.0);
     }
@@ -252,4 +251,3 @@ mod tests {
         assert!((tau[2] + 2.5 * 9.81).abs() < 1e-9);
     }
 }
-

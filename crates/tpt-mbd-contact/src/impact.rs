@@ -86,7 +86,13 @@ pub fn compute_impact_impulse(
     normal: Vector3,
     restitution: f64,
 ) -> f64 {
-    CoefficientOfRestitution::compute_impulse(mass_i, mass_j, relative_velocity, normal, restitution)
+    CoefficientOfRestitution::compute_impulse(
+        mass_i,
+        mass_j,
+        relative_velocity,
+        normal,
+        restitution,
+    )
 }
 
 #[cfg(test)]

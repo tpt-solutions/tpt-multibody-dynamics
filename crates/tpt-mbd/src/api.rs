@@ -1,12 +1,12 @@
 use crate::error::{MbdError, Result, SystemErrorKind};
-#[cfg(feature = "system")]
-use tpt_mbd_system::system::MultibodySystem;
+#[cfg(feature = "kinematics")]
+use tpt_math_geometry::Isometry3;
 #[cfg(feature = "kinematics")]
 use tpt_mbd_kinematics::chain::DhChain;
 #[cfg(feature = "kinematics")]
 use tpt_mbd_kinematics::inverse::{solve_newton_lm, IkOptions, IkResult};
-#[cfg(feature = "kinematics")]
-use tpt_math_geometry::Isometry3;
+#[cfg(feature = "system")]
+use tpt_mbd_system::system::MultibodySystem;
 
 /// Result of a full multibody simulation.
 #[derive(Debug, Clone, Default)]
@@ -27,8 +27,7 @@ pub fn forward_kinematics(chain: &DhChain, joint_angles: &[f64]) -> Isometry3<f6
 
 /// Compute forward kinematics for a serial chain (stub, no `kinematics` feature).
 #[cfg(not(feature = "kinematics"))]
-pub fn forward_kinematics(_chain: &(), _joint_angles: &[f64]) {
-}
+pub fn forward_kinematics(_chain: &(), _joint_angles: &[f64]) {}
 
 /// Solve inverse kinematics for a serial chain.
 ///
@@ -68,11 +67,7 @@ pub fn inverse_kinematics(
 
 /// Solve inverse kinematics (stub, no `kinematics` feature).
 #[cfg(not(feature = "kinematics"))]
-pub fn inverse_kinematics(
-    _chain: &(),
-    _target: &(),
-    _initial: &[f64],
-) -> Result<()> {
+pub fn inverse_kinematics(_chain: &(), _target: &(), _initial: &[f64]) -> Result<()> {
     Err(MbdError::KinematicsError {
         message: "kinematics feature not enabled".to_string(),
         kind: crate::error::KinematicsErrorKind::InvalidChain,

@@ -75,14 +75,22 @@ impl Vector3 {
 impl Add for Vector3 {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Self([self.0[0] + rhs.0[0], self.0[1] + rhs.0[1], self.0[2] + rhs.0[2]])
+        Self([
+            self.0[0] + rhs.0[0],
+            self.0[1] + rhs.0[1],
+            self.0[2] + rhs.0[2],
+        ])
     }
 }
 
 impl Sub for Vector3 {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        Self([self.0[0] - rhs.0[0], self.0[1] - rhs.0[1], self.0[2] - rhs.0[2]])
+        Self([
+            self.0[0] - rhs.0[0],
+            self.0[1] - rhs.0[1],
+            self.0[2] - rhs.0[2],
+        ])
     }
 }
 

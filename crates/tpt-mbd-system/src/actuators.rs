@@ -79,12 +79,7 @@ impl DcMotor {
     ///
     /// Returns `(torque, current)` after applying `voltage` with the motor
     /// spinning at `angular_velocity`.
-    pub fn dynamics(
-        &self,
-        voltage: f64,
-        angular_velocity: f64,
-        dt: f64,
-    ) -> (f64, f64) {
+    pub fn dynamics(&self, voltage: f64, angular_velocity: f64, dt: f64) -> (f64, f64) {
         let back_emf = self.torque_constant * angular_velocity;
         let di_dt = (voltage - back_emf - self.torque_constant * 0.0) / self.inductance;
         let current = (di_dt * dt).max(0.0);
@@ -211,8 +206,16 @@ mod tests {
             current = c;
         }
 
-        assert!(torque > 0.0, "torque should be positive after step, got {}", torque);
-        assert!(current > 0.0, "current should be positive after step, got {}", current);
+        assert!(
+            torque > 0.0,
+            "torque should be positive after step, got {}",
+            torque
+        );
+        assert!(
+            current > 0.0,
+            "current should be positive after step, got {}",
+            current
+        );
         assert!(
             current < 12.0 / 1.0 + 1.0,
             "current should be below steady-state, got {}",
@@ -238,4 +241,3 @@ mod tests {
         assert_eq!(act.force, 50.0);
     }
 }
-

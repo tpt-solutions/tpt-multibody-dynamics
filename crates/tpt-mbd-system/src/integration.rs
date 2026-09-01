@@ -211,8 +211,10 @@ impl GeneralizedAlpha {
         let mut qdot_f = qdot.to_vec();
         let mut qddot_f = qddot.to_vec();
         for i in 0..n {
-            q_f[i] = alpha_f * q[i] + (1.0 - alpha_f) * (q[i] + qdot[i] * dt + (0.5 - beta) * dt * dt * qddot[i]);
-            qdot_f[i] = alpha_m * qdot[i] + (1.0 - alpha_m) * (qdot[i] + (1.0 - gamma) * dt * qddot[i]);
+            q_f[i] = alpha_f * q[i]
+                + (1.0 - alpha_f) * (q[i] + qdot[i] * dt + (0.5 - beta) * dt * dt * qddot[i]);
+            qdot_f[i] =
+                alpha_m * qdot[i] + (1.0 - alpha_m) * (qdot[i] + (1.0 - gamma) * dt * qddot[i]);
             qddot_f[i] = alpha_m * qddot[i] + (1.0 - alpha_m) * qddot[i];
         }
 
@@ -228,10 +230,11 @@ impl GeneralizedAlpha {
         }
 
         for i in 0..n {
-            q_new[i] = q[i] + qdot[i] * dt + (0.5 - beta) * dt * dt * qddot[i]
+            q_new[i] = q[i]
+                + qdot[i] * dt
+                + (0.5 - beta) * dt * dt * qddot[i]
                 + beta * dt * dt * qddot_new[i];
-            qdot_new[i] = qdot[i] + (1.0 - gamma) * dt * qddot[i]
-                + gamma * dt * qddot_new[i];
+            qdot_new[i] = qdot[i] + (1.0 - gamma) * dt * qddot[i] + gamma * dt * qddot_new[i];
         }
 
         (q_new, qdot_new, qddot_new)
@@ -352,11 +355,11 @@ pub fn energy(system: &MultibodySystem, q: &[f64], qdot: &[f64]) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::system::MultibodySystem;
     use crate::forces::{Gravity, SpringDamper};
-    use tpt_mbd_core::{SpatialInertia, RigidBody};
-    use tpt_mbd_core::frame::Isometry3;
+    use crate::system::MultibodySystem;
     use tpt_math_linalg_fixed::{Matrix3, Vector3};
+    use tpt_mbd_core::frame::Isometry3;
+    use tpt_mbd_core::{RigidBody, SpatialInertia};
 
     #[test]
     fn free_fall_energy_conservation() {
@@ -455,7 +458,10 @@ mod tests {
         let g = Gravity::new(9.81);
         let q = vec![0.0f64; sys.num_dofs];
         let tau = g.apply(&sys, &q);
-        assert!(tau[2] < 0.0, "gravity z-force must be negative, got {}", tau[2]);
+        assert!(
+            tau[2] < 0.0,
+            "gravity z-force must be negative, got {}",
+            tau[2]
+        );
     }
 }
-

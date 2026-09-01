@@ -30,13 +30,13 @@
 //! - `flexible` — Craig-Bampton CMS, modal superposition
 //! - `system` — system assembly, time integration, actuators
 
-/// Unified error type and result alias for the `tpt-mbd` ecosystem.
-pub mod error;
+/// High-level convenience API wrappers around the constituent crates.
+pub mod api;
 /// Builder pattern for constructing [`MultibodySystem`][tpt_mbd_system::system::MultibodySystem].
 #[cfg(feature = "system")]
 pub mod builder;
-/// High-level convenience API wrappers around the constituent crates.
-pub mod api;
+/// Unified error type and result alias for the `tpt-mbd` ecosystem.
+pub mod error;
 
 pub use error::{MbdError, Result};
 

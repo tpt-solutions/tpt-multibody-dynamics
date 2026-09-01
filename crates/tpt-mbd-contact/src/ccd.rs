@@ -1,6 +1,9 @@
 //! Continuous collision detection: conservative advancement and speculative contacts.
 
-use crate::{Vector3, detection::{self, BroadPhaseAABB, ContactPoint}};
+use crate::{
+    detection::{self, BroadPhaseAABB, ContactPoint},
+    Vector3,
+};
 
 /// Result of a continuous collision detection query.
 #[derive(Clone, Debug, PartialEq)]

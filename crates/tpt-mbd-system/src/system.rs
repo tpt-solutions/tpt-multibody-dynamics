@@ -8,13 +8,13 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use tpt_math_linalg_dense::{DMatrix, DVector};
 use tpt_mbd_core::inertia::{RigidBody, SpatialInertia};
-use tpt_mbd_joints::joint::JointType;
 use tpt_mbd_joints::constraint::JointConstraint;
+use tpt_mbd_joints::joint::JointType;
 
 pub use crate::Matrix;
 pub use crate::Vector;

@@ -45,7 +45,9 @@ pub fn compute_damping_matrix(
     let p = modal_mass.ncols();
     let alpha = rayleigh.alpha;
     let beta = rayleigh.beta;
-    DMatrix::from_fn(n, p, |i, j| alpha * modal_mass[(i, j)] + beta * modal_stiffness[(i, j)])
+    DMatrix::from_fn(n, p, |i, j| {
+        alpha * modal_mass[(i, j)] + beta * modal_stiffness[(i, j)]
+    })
 }
 
 /// Compute the damping ratio for each mode given the Rayleigh coefficients.
@@ -53,7 +55,11 @@ pub fn compute_damping_matrix(
 /// For mode `i` with natural frequency `ω_i` (rad/s), the damping ratio is
 /// `ζ_i = (α + β·ω_i²) / (2·ω_i)`.  Returns one [`ModalDampingRatio`] per
 /// eigenvalue in the order provided.
-pub fn compute_damping_ratios(eigenvalues: &[f64], alpha: f64, beta: f64) -> Vec<ModalDampingRatio> {
+pub fn compute_damping_ratios(
+    eigenvalues: &[f64],
+    alpha: f64,
+    beta: f64,
+) -> Vec<ModalDampingRatio> {
     eigenvalues
         .iter()
         .enumerate()
@@ -97,7 +103,16 @@ mod tests {
         let k = DMatrix::from_row_slice(2, 2, &[4.0, -2.0, -2.0, 4.0]);
         let rayleigh = RayleighDamping::new(0.1, 0.01);
         let c = compute_damping_matrix(&rayleigh, m.clone(), k.clone());
-        let expected = DMatrix::from_row_slice(2, 2, &[0.1 * 2.0 + 0.01 * 4.0, 0.1 * 0.0 + 0.01 * (-2.0), 0.1 * 0.0 + 0.01 * (-2.0), 0.1 * 3.0 + 0.01 * 4.0]);
+        let expected = DMatrix::from_row_slice(
+            2,
+            2,
+            &[
+                0.1 * 2.0 + 0.01 * 4.0,
+                0.1 * 0.0 + 0.01 * (-2.0),
+                0.1 * 0.0 + 0.01 * (-2.0),
+                0.1 * 3.0 + 0.01 * 4.0,
+            ],
+        );
         for i in 0..2 {
             for j in 0..2 {
                 assert!(

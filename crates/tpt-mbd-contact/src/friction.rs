@@ -51,7 +51,8 @@ pub fn compute_friction_force(
         FrictionModel::SmoothCoulomb => {
             let v_ratio = speed / (params.stribeck_velocity + f64::EPSILON);
             let smooth = 2.0 * v_ratio;
-            params.kinetic_coeff + (params.static_coeff - params.kinetic_coeff) / (1.0 + smooth * smooth)
+            params.kinetic_coeff
+                + (params.static_coeff - params.kinetic_coeff) / (1.0 + smooth * smooth)
         }
         FrictionModel::Stribeck => StribeckFriction::coefficient(speed, params),
     };

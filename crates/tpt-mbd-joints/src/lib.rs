@@ -34,6 +34,7 @@ extern crate alloc;
 
 pub mod constraint;
 pub mod drift;
+pub mod formulation;
 pub mod friction;
 pub mod joint;
 pub mod nonholonomic;

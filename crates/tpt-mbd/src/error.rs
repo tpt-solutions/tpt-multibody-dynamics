@@ -167,9 +167,9 @@ impl fmt::Display for MbdError {
 impl std::error::Error for MbdError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::KinematicsError { source: Some(s), .. } => {
-                Some(s.as_ref() as &(dyn std::error::Error + 'static))
-            }
+            Self::KinematicsError {
+                source: Some(s), ..
+            } => Some(s.as_ref() as &(dyn std::error::Error + 'static)),
             _ => None,
         }
     }

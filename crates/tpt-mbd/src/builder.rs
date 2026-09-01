@@ -63,7 +63,12 @@ impl MultibodySystemBuilder {
         self
     }
 
-    pub fn add_joint(mut self, ty: impl Into<String>, body_i: impl Into<String>, body_j: impl Into<String>) -> Self {
+    pub fn add_joint(
+        mut self,
+        ty: impl Into<String>,
+        body_i: impl Into<String>,
+        body_j: impl Into<String>,
+    ) -> Self {
         self.joints.push((ty.into(), body_i.into(), body_j.into()));
         self
     }

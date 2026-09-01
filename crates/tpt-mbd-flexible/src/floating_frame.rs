@@ -103,15 +103,7 @@ pub fn coriolis_centrifugal_matrix(
         3,
         3,
         &[
-            0.0,
-            -omega[2],
-            omega[1],
-            omega[2],
-            0.0,
-            -omega[0],
-            -omega[1],
-            omega[0],
-            0.0,
+            0.0, -omega[2], omega[1], omega[2], 0.0, -omega[0], -omega[1], omega[0], 0.0,
         ],
     );
 
@@ -134,7 +126,13 @@ pub fn coriolis_centrifugal_matrix(
 fn with_elem(m: &DMatrix<f64>, row: usize, col: usize, val: f64) -> DMatrix<f64> {
     let nrows = m.nrows();
     let ncols = m.ncols();
-    DMatrix::from_fn(nrows, ncols, |i, j| if i == row && j == col { val } else { m[(i, j)] })
+    DMatrix::from_fn(nrows, ncols, |i, j| {
+        if i == row && j == col {
+            val
+        } else {
+            m[(i, j)]
+        }
+    })
 }
 
 /// Compute the deformation gradient at the nodes of an element.
@@ -153,15 +151,7 @@ pub fn deformation_gradient(
     mode_shapes: &DMatrix<f64>,
     element_dof: &[usize],
 ) -> DMatrix<f64> {
-    let mut f = DMatrix::from_row_slice(
-        3,
-        3,
-        &[
-            1.0, 0.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 0.0, 1.0,
-        ],
-    );
+    let mut f = DMatrix::from_row_slice(3, 3, &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
     if q_modal.is_empty() || element_dof.is_empty() {
         return f;
     }
@@ -200,14 +190,7 @@ mod tests {
         let mode_shapes = DMatrix::from_row_slice(
             6,
             2,
-            &[
-                1.0, 0.0,
-                0.0, 1.0,
-                0.0, 0.0,
-                0.0, 0.0,
-                0.0, 0.0,
-                0.0, 0.0,
-            ],
+            &[1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         );
         let q_modal = vec![0.0, 0.0];
         let q_rigid = Isometry3::identity();
@@ -234,7 +217,14 @@ mod tests {
     #[test]
     fn test_coriolis_centrifugal_zero_omega() {
         let m_modal = DMatrix::from_row_slice(3, 3, &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
-        let mode_shapes = DMatrix::from_row_slice(6, 3, &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        let mode_shapes = DMatrix::from_row_slice(
+            6,
+            3,
+            &[
+                1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0,
+            ],
+        );
         let g = coriolis_centrifugal_matrix(&[0.0, 0.0, 0.0], m_modal, mode_shapes);
         assert_eq!(g.nrows(), 6);
         assert_eq!(g.ncols(), 6);
@@ -257,15 +247,8 @@ mod tests {
         let q_modal = vec![0.0];
         let element_dof = vec![0, 1, 2];
         let f = deformation_gradient(&q_modal, &mode_shapes, &element_dof);
-        let expected = DMatrix::from_row_slice(
-            3,
-            3,
-            &[
-                1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 0.0, 1.0,
-            ],
-        );
+        let expected =
+            DMatrix::from_row_slice(3, 3, &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
         assert_eq!(f, expected);
     }
 }
