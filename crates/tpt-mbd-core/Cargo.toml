@@ -1,0 +1,38 @@
+[package]
+name = "tpt-mbd-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Foundation layer: Featherstone spatial vector algebra, frames, generalized coordinates, spatial inertia"
+readme = "README.md"
+include = ["LICENSE-MIT", "LICENSE-APACHE", "README.md", "src/**/*"]
+
+[lib]
+name = "tpt_mbd_core"
+
+[features]
+default = ["std"]
+std = ["alloc"]
+alloc = ["tpt-math-spatial/alloc", "tpt-math-geometry/alloc", "tpt-math-units/alloc"]
+
+[dependencies]
+tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial", default-features = false }
+tpt-math-geometry = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-geometry", default-features = false }
+tpt-math-units = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-units", default-features = false }
+num-traits = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial" }
+tpt-math-geometry = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-geometry" }
+tpt-math-units = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-units" }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]

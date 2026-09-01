@@ -1,0 +1,55 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/tpt-mbd",
+    "crates/tpt-mbd-core",
+    "crates/tpt-mbd-contact",
+    "crates/tpt-mbd-flexible",
+    "crates/tpt-mbd-joints",
+    "crates/tpt-mbd-kinematics",
+    "crates/tpt-mbd-system",
+]
+
+[workspace.package]
+description = "tpt-mbd — engineering-grade multibody dynamics for robotics, vehicle dynamics, biomechanics, and mechanism simulation"
+authors = ["TPT Solutions"]
+edition = "2021"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/tpt-solutions/tpt-multibody-dynamics"
+repository = "https://github.com/tpt-solutions/tpt-multibody-dynamics"
+
+[workspace.dependencies]
+tpt-math-numeric = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-numeric" }
+tpt-math-linalg = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-linalg" }
+tpt-math-linalg-dense = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-linalg-dense" }
+tpt-math-linalg-fixed = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-linalg-fixed" }
+tpt-math-geometry = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-geometry" }
+tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial" }
+tpt-math-optimize-general = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-optimize-general" }
+tpt-math-units = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-units" }
+tpt-fem-mesh = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-mesh" }
+tpt-fem-elasticity = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-elasticity" }
+tpt-fem-eigen = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-eigen" }
+tpt-mbd-core = { path = "crates/tpt-mbd-core" }
+tpt-mbd-kinematics = { path = "crates/tpt-mbd-kinematics" }
+tpt-mbd-joints = { path = "crates/tpt-mbd-joints" }
+tpt-mbd-contact = { path = "crates/tpt-mbd-contact" }
+tpt-mbd-flexible = { path = "crates/tpt-mbd-flexible" }
+tpt-mbd-system = { path = "crates/tpt-mbd-system" }
+tpt-mbd = { path = "crates/tpt-mbd" }
+rayon = { version = "1", default-features = false }
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+overflow-checks = true

@@ -1,0 +1,28 @@
+[package]
+name = "tpt-mbd-joints"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Joint constraint formulation and stabilization for multibody systems"
+readme = "README.md"
+include = ["LICENSE-MIT", "LICENSE-APACHE", "README.md", "src/**/*"]
+
+[lib]
+name = "tpt_mbd_joints"
+
+[dependencies]
+tpt-mbd-core = { path = "../../tpt-mbd-core", default-features = false }
+tpt-math-linalg = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-linalg", default-features = false }
+tpt-math-numeric = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-numeric", default-features = false }
+tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial", default-features = false }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
