@@ -65,7 +65,10 @@ impl AnalyticalJacobian {
 }
 
 /// Compute the 6×n geometric Jacobian at the end-effector.
-pub fn compute_geometric_jacobian(links: &[DhLink], joint_angles: &[f64]) -> crate::forward::Jacobian {
+pub fn compute_geometric_jacobian(
+    links: &[DhLink],
+    joint_angles: &[f64],
+) -> crate::forward::Jacobian {
     crate::forward::geometric_jacobian(links, joint_angles)
 }
 
@@ -80,8 +83,16 @@ pub fn manipulability(jac: &crate::forward::Jacobian) -> f64 {
         for col in 0..6 {
             let mut sum = 0.0;
             for k in 0..n {
-                let j_row_k = if row < 3 { jac.angular_column(k)[row] } else { jac.linear_column(k)[row - 3] };
-                let j_col_k = if col < 3 { jac.angular_column(k)[col] } else { jac.linear_column(k)[col - 3] };
+                let j_row_k = if row < 3 {
+                    jac.angular_column(k)[row]
+                } else {
+                    jac.linear_column(k)[row - 3]
+                };
+                let j_col_k = if col < 3 {
+                    jac.angular_column(k)[col]
+                } else {
+                    jac.linear_column(k)[col - 3]
+                };
                 sum += j_row_k * j_col_k;
             }
             jjt[row][col] = sum;
@@ -89,7 +100,11 @@ pub fn manipulability(jac: &crate::forward::Jacobian) -> f64 {
     }
 
     let det = determinant_6x6(&jjt);
-    if det < 0.0 { 0.0 } else { det.sqrt() }
+    if det < 0.0 {
+        0.0
+    } else {
+        det.sqrt()
+    }
 }
 
 /// Compute the condition number of the Jacobian.
@@ -100,27 +115,62 @@ pub fn jacobian_condition_number(jac: &crate::forward::Jacobian) -> f64 {
 
     for row in 0..6 {
         for col in 0..m {
-            j[row][col] = if row < 3 { jac.angular_column(col)[row] } else { jac.linear_column(col)[row - 3] };
+            j[row][col] = if row < 3 {
+                jac.angular_column(col)[row]
+            } else {
+                jac.linear_column(col)[row - 3]
+            };
         }
     }
 
-    let norm_fro = (0..6).map(|i| (0..m).map(|col| j[i][col]).sum::<f64>().powi(2)).sum::<f64>().sqrt();
-    if norm_fro < 1e-12 { 1e12 } else { norm_fro / 1e-3 }
+    let norm_fro = (0..6)
+        .map(|i| (0..m).map(|col| j[i][col]).sum::<f64>().powi(2))
+        .sum::<f64>()
+        .sqrt();
+    if norm_fro < 1e-12 {
+        1e12
+    } else {
+        norm_fro / 1e-3
+    }
 }
 
 /// Simple 6×6 determinant via cofactor expansion (only for the 6×6 case).
 fn determinant_6x6(m: &[[f64; 6]; 6]) -> f64 {
-    let det = m[0][0] * (
-        m[1][1] * (m[2][2]*m[3][3]*m[4][4]*m[5][5] + m[2][3]*m[3][4]*m[4][5]*m[5][2] + m[2][4]*m[3][5]*m[4][2]*m[5][3]
-          - m[2][5]*m[3][4]*m[4][2]*m[5][3] - m[2][2]*m[3][5]*m[4][4]*m[5][3] - m[2][3]*m[3][2]*m[4][4]*m[5][5])
-        - m[1][2] * (m[2][1]*m[3][3]*m[4][4]*m[5][5] + m[2][3]*m[3][4]*m[4][5]*m[5][1] + m[2][4]*m[3][5]*m[4][1]*m[5][3]
-          - m[2][5]*m[3][4]*m[4][1]*m[5][3] - m[2][1]*m[3][5]*m[4][4]*m[5][3] - m[2][3]*m[3][1]*m[4][4]*m[5][5])
-        + m[1][3] * (m[2][1]*m[3][2]*m[4][4]*m[5][5] + m[2][2]*m[3][4]*m[4][5]*m[5][1] + m[2][4]*m[3][5]*m[4][1]*m[5][2]
-          - m[2][5]*m[3][4]*m[4][1]*m[5][2] - m[2][1]*m[3][5]*m[4][2]*m[5][4] - m[2][2]*m[3][1]*m[4][4]*m[5][5])
-        - m[1][4] * (m[2][1]*m[3][2]*m[4][3]*m[5][5] + m[2][2]*m[3][3]*m[4][5]*m[5][1] + m[2][3]*m[3][5]*m[4][1]*m[5][2]
-          - m[2][5]*m[3][3]*m[4][1]*m[5][2] - m[2][1]*m[3][5]*m[4][2]*m[5][3] - m[2][2]*m[3][1]*m[4][3]*m[5][5])
-        + m[1][5] * (m[2][1]*m[3][2]*m[4][3]*m[5][4] + m[2][2]*m[3][3]*m[4][4]*m[5][1] + m[2][3]*m[3][4]*m[4][1]*m[5][2]
-          - m[2][4]*m[3][3]*m[4][1]*m[5][2] - m[2][1]*m[3][4]*m[4][2]*m[5][3] - m[2][2]*m[3][1]*m[4][3]*m[5][4])
-    );
+    let det = m[0][0]
+        * (m[1][1]
+            * (m[2][2] * m[3][3] * m[4][4] * m[5][5]
+                + m[2][3] * m[3][4] * m[4][5] * m[5][2]
+                + m[2][4] * m[3][5] * m[4][2] * m[5][3]
+                - m[2][5] * m[3][4] * m[4][2] * m[5][3]
+                - m[2][2] * m[3][5] * m[4][4] * m[5][3]
+                - m[2][3] * m[3][2] * m[4][4] * m[5][5])
+            - m[1][2]
+                * (m[2][1] * m[3][3] * m[4][4] * m[5][5]
+                    + m[2][3] * m[3][4] * m[4][5] * m[5][1]
+                    + m[2][4] * m[3][5] * m[4][1] * m[5][3]
+                    - m[2][5] * m[3][4] * m[4][1] * m[5][3]
+                    - m[2][1] * m[3][5] * m[4][4] * m[5][3]
+                    - m[2][3] * m[3][1] * m[4][4] * m[5][5])
+            + m[1][3]
+                * (m[2][1] * m[3][2] * m[4][4] * m[5][5]
+                    + m[2][2] * m[3][4] * m[4][5] * m[5][1]
+                    + m[2][4] * m[3][5] * m[4][1] * m[5][2]
+                    - m[2][5] * m[3][4] * m[4][1] * m[5][2]
+                    - m[2][1] * m[3][5] * m[4][2] * m[5][4]
+                    - m[2][2] * m[3][1] * m[4][4] * m[5][5])
+            - m[1][4]
+                * (m[2][1] * m[3][2] * m[4][3] * m[5][5]
+                    + m[2][2] * m[3][3] * m[4][5] * m[5][1]
+                    + m[2][3] * m[3][5] * m[4][1] * m[5][2]
+                    - m[2][5] * m[3][3] * m[4][1] * m[5][2]
+                    - m[2][1] * m[3][5] * m[4][2] * m[5][3]
+                    - m[2][2] * m[3][1] * m[4][3] * m[5][5])
+            + m[1][5]
+                * (m[2][1] * m[3][2] * m[4][3] * m[5][4]
+                    + m[2][2] * m[3][3] * m[4][4] * m[5][1]
+                    + m[2][3] * m[3][4] * m[4][1] * m[5][2]
+                    - m[2][4] * m[3][3] * m[4][1] * m[5][2]
+                    - m[2][1] * m[3][4] * m[4][2] * m[5][3]
+                    - m[2][2] * m[3][1] * m[4][3] * m[5][4]));
     det
 }

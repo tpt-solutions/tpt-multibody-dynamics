@@ -52,7 +52,11 @@ pub struct DhChain {
 
 impl DhChain {
     pub fn new(links: Vec<DhLink>) -> Self {
-        Self { links, base: Isometry3::identity(), tool: Isometry3::identity() }
+        Self {
+            links,
+            base: Isometry3::<f64>::identity(),
+            tool: Isometry3::<f64>::identity(),
+        }
     }
 
     pub fn with_base_tool(links: Vec<DhLink>, base: Isometry3<f64>, tool: Isometry3<f64>) -> Self {
@@ -67,7 +71,11 @@ impl DhChain {
     pub fn forward(&self, joint_angles: &[f64]) -> Isometry3<f64> {
         let mut result = self.base;
         for (i, link) in self.links.iter().enumerate() {
-            let theta = if i < joint_angles.len() { joint_angles[i] } else { link.theta };
+            let theta = if i < joint_angles.len() {
+                joint_angles[i]
+            } else {
+                link.theta
+            };
             let t = DhLink::new(link.a, link.alpha, link.d, theta).transform();
             result = result * t;
         }

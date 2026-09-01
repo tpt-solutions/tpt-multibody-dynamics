@@ -28,8 +28,12 @@ impl<const N: usize> GeneralizedCoordinates<N> {
     }
 
     /// Number of DOFs.
-    pub fn len(&self) -> usize { N }
-    pub fn is_empty(&self) -> bool { N == 0 }
+    pub fn len(&self) -> usize {
+        N
+    }
+    pub fn is_empty(&self) -> bool {
+        N == 0
+    }
 }
 
 /// Generalized velocities `q̇`: joint rates.
@@ -45,8 +49,12 @@ impl<const N: usize> GeneralizedVelocities<N> {
     pub fn new(data: [f64; N]) -> Self {
         Self { data }
     }
-    pub fn len(&self) -> usize { N }
-    pub fn is_empty(&self) -> bool { N == 0 }
+    pub fn len(&self) -> usize {
+        N
+    }
+    pub fn is_empty(&self) -> bool {
+        N == 0
+    }
 }
 
 /// Generalized accelerations `q̈`: joint accelerations.
@@ -62,8 +70,12 @@ impl<const N: usize> GeneralizedAccelerations<N> {
     pub fn new(data: [f64; N]) -> Self {
         Self { data }
     }
-    pub fn len(&self) -> usize { N }
-    pub fn is_empty(&self) -> bool { N == 0 }
+    pub fn len(&self) -> usize {
+        N
+    }
+    pub fn is_empty(&self) -> bool {
+        N == 0
+    }
 }
 
 impl<const N: usize> fmt::Display for GeneralizedCoordinates<N> {

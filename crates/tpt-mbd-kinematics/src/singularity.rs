@@ -43,7 +43,12 @@ impl SingularityAnalysis {
             SingularityType::None
         };
 
-        SingularityAnalysis { manipulability: manip, condition_number: cond, is_singular, singularity_type }
+        SingularityAnalysis {
+            manipulability: manip,
+            condition_number: cond,
+            is_singular,
+            singularity_type,
+        }
     }
 }
 
@@ -91,6 +96,14 @@ fn workspace_point_from_isometry(pose: &Isometry3<f64>) -> WorkspacePoint {
     let position = [t.data[0], t.data[1], t.data[2]];
     let uq = UnitQuaternion::from_rotation_matrix(&pose.rotation);
     let q = uq.quaternion();
-    let orientation = [q.coords.data[0], q.coords.data[1], q.coords.data[2], q.coords.data[3]];
-    WorkspacePoint { position, orientation }
+    let orientation = [
+        q.coords.data[0],
+        q.coords.data[1],
+        q.coords.data[2],
+        q.coords.data[3],
+    ];
+    WorkspacePoint {
+        position,
+        orientation,
+    }
 }

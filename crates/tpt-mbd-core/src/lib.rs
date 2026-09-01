@@ -12,6 +12,6 @@
 //! dynamic system sizes.
 
 pub mod frame;
+pub mod generalized;
 pub mod inertia;
 pub mod spatial;
-pub mod generalized;

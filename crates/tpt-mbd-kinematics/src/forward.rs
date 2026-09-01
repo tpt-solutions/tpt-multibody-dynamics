@@ -12,9 +12,13 @@ pub use crate::chain::DhLink;
 ///
 /// Returns the end-effector pose in the base frame.
 pub fn forward_kinematics(links: &[DhLink], joint_angles: &[f64]) -> Isometry3<f64> {
-    let mut result = Isometry3::identity();
+    let mut result = Isometry3::<f64>::identity();
     for (i, link) in links.iter().enumerate() {
-        let theta = if i < joint_angles.len() { joint_angles[i] } else { link.theta };
+        let theta = if i < joint_angles.len() {
+            joint_angles[i]
+        } else {
+            link.theta
+        };
         let t = DhLink::new(link.a, link.alpha, link.d, theta).transform();
         result = result * t;
     }
@@ -28,10 +32,14 @@ pub fn forward_kinematics(links: &[DhLink], joint_angles: &[f64]) -> Isometry3<f
 pub fn geometric_jacobian(links: &[DhLink], joint_angles: &[f64]) -> Jacobian {
     let n = links.len();
     let mut jac = Jacobian::new(n);
-    let mut t_world = Isometry3::identity();
+    let mut t_world = Isometry3::<f64>::identity();
 
     for i in 0..n {
-        let theta = if i < joint_angles.len() { joint_angles[i] } else { links[i].theta };
+        let theta = if i < joint_angles.len() {
+            joint_angles[i]
+        } else {
+            links[i].theta
+        };
         let t_i = DhLink::new(links[i].a, links[i].alpha, links[i].d, theta).transform();
         t_world = t_world * t_i;
 
@@ -108,7 +116,10 @@ pub struct SpatialVelocity {
 
 impl SpatialVelocity {
     pub fn new(angular: Vector3<f64>, linear: Vector3<f64>) -> Self {
-        Self { angular: [angular.x(), angular.y(), angular.z()], linear: [linear.x(), linear.y(), linear.z()] }
+        Self {
+            angular: [angular.x(), angular.y(), angular.z()],
+            linear: [linear.x(), linear.y(), linear.z()],
+        }
     }
 
     pub fn angular_vec(&self) -> Vector3<f64> {
@@ -130,10 +141,16 @@ mod tests {
         let links = vec![DhLink::new(1.0, 0.0, 0.0, 0.0)];
         let q = [core::f64::consts::FRAC_PI_2];
         let pose = forward_kinematics(&links, &q);
-        let expected_rot = Rotation3::from_axis_angle(&Vector3::new([0.0, 0.0, 1.0]), core::f64::consts::FRAC_PI_2);
+        let expected_rot = Rotation3::from_axis_angle(
+            &Vector3::new([0.0, 0.0, 1.0]),
+            core::f64::consts::FRAC_PI_2,
+        );
         for i in 0..3 {
             for j in 0..3 {
-                assert!((pose.rotation.matrix().data[i][j] - expected_rot.matrix().data[i][j]).abs() < 1e-12);
+                assert!(
+                    (pose.rotation.matrix().data[i][j] - expected_rot.matrix().data[i][j]).abs()
+                        < 1e-12
+                );
             }
         }
     }

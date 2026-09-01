@@ -45,12 +45,34 @@ pub struct IkResult {
 }
 
 impl IkResult {
-    pub fn success(solution: Vec<f64>, iterations: usize, error_position: f64, error_orientation: f64) -> Self {
-        Self { solution, converged: true, iterations, error_position, error_orientation }
+    pub fn success(
+        solution: Vec<f64>,
+        iterations: usize,
+        error_position: f64,
+        error_orientation: f64,
+    ) -> Self {
+        Self {
+            solution,
+            converged: true,
+            iterations,
+            error_position,
+            error_orientation,
+        }
     }
 
-    pub fn failure(solution: Vec<f64>, iterations: usize, error_position: f64, error_orientation: f64) -> Self {
-        Self { solution, converged: false, iterations, error_position, error_orientation }
+    pub fn failure(
+        solution: Vec<f64>,
+        iterations: usize,
+        error_position: f64,
+        error_orientation: f64,
+    ) -> Self {
+        Self {
+            solution,
+            converged: false,
+            iterations,
+            error_position,
+            error_orientation,
+        }
     }
 }
 
@@ -150,8 +172,8 @@ pub fn solve_jacobian_transpose(
         for i in 0..n {
             let ang = jac.angular_column(i);
             let lin = jac.linear_column(i);
-            let ang_norm = ang[0]*ang[0] + ang[1]*ang[1] + ang[2]*ang[2];
-            let lin_norm = lin[0]*lin[0] + lin[1]*lin[1] + lin[2]*lin[2];
+            let ang_norm = ang[0] * ang[0] + ang[1] * ang[1] + ang[2] * ang[2];
+            let lin_norm = lin[0] * lin[0] + lin[1] * lin[1] + lin[2] * lin[2];
             let j_norm_sq = ang_norm + lin_norm;
             if j_norm_sq > 1e-12 {
                 let scale = alpha * (pos_err + rot_err) / j_norm_sq.sqrt();
@@ -203,8 +225,12 @@ pub fn solve_spherical_wrist(
     let q3 = q3_arg.clamp(-1.0, 1.0).acos();
 
     match elbow_config {
-        ElbowConfig::Down => { q[2] = q3; }
-        ElbowConfig::Up => { q[2] = -q3; }
+        ElbowConfig::Down => {
+            q[2] = q3;
+        }
+        ElbowConfig::Up => {
+            q[2] = -q3;
+        }
     }
 
     q[0] = q1;
@@ -230,7 +256,8 @@ pub enum ElbowConfig {
 /// Compute pose error between current and target.
 fn pose_error(current: &Isometry3<f64>, target: &Isometry3<f64>) -> (f64, f64) {
     let dp = current.translation.vector - target.translation.vector;
-    let pos_err = (dp.data[0]*dp.data[0] + dp.data[1]*dp.data[1] + dp.data[2]*dp.data[2]).sqrt();
+    let pos_err =
+        (dp.data[0] * dp.data[0] + dp.data[1] * dp.data[1] + dp.data[2] * dp.data[2]).sqrt();
 
     let rot_err = current.rotation.matrix().data[0][0]
         + current.rotation.matrix().data[1][1]
@@ -245,7 +272,10 @@ fn pose_error(current: &Isometry3<f64>, target: &Isometry3<f64>) -> (f64, f64) {
 
 impl fmt::Display for IkResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "IkResult(converged={}, iter={}, pos_err={:.6}, rot_err={:.6})",
-            self.converged, self.iterations, self.error_position, self.error_orientation)
+        write!(
+            f,
+            "IkResult(converged={}, iter={}, pos_err={:.6}, rot_err={:.6})",
+            self.converged, self.iterations, self.error_position, self.error_orientation
+        )
     }
 }
