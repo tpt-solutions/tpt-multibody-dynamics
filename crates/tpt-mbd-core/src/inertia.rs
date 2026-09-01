@@ -6,8 +6,30 @@
 //! - [`RigidBody`] — spatial inertia + reference frame + collision geometry.
 //!
 //! Cross-product operator structs:
-//! - [`MotionCross`] — `v×` applied to a [`crate::spatial::SpatialVelocity`].
-//! - [`ForceCross`] — `v×*` applied to a [`crate::spatial::SpatialForce`].
+//! - [`MotionCross`] — `v×` applied to a [`SpatialVelocity`].
+//! - [`ForceCross`] — `v×*` applied to a [`SpatialForce`].
+//!
+//! # Examples
+//!
+//! ```
+//! use tpt_mbd_core::{SpatialInertia, RigidBody, Frame};
+//! use tpt_mbd_core::spatial::SpatialVelocity;
+//! use tpt_math_linalg_fixed::{Matrix3, Vector3};
+//!
+//! let si = SpatialInertia::new(
+//!     2.0,
+//!     Vector3::new([0.0, 0.0, 0.0]),
+//!     Matrix3::new([
+//!         [1.0, 0.0, 0.0],
+//!         [0.0, 2.0, 0.0],
+//!         [0.0, 0.0, 3.0],
+//!     ]),
+//! );
+//! assert_eq!(si.mass, 2.0);
+//!
+//! let body = RigidBody::new(si, Frame::identity(), "link0", 0);
+//! assert_eq!(body.name, "link0");
+//! ```
 
 use tpt_math_geometry::Isometry3;
 use tpt_math_linalg_fixed::{Matrix, Matrix3, Vector3, Vector6};
@@ -21,15 +43,25 @@ type Matrix6<T> = Matrix<T, 6, 6>;
 // SpatialInertia
 // ===========================================================================
 
+/// 6×6 spatial mass matrix capturing mass, center of mass, and rotational inertia.
+///
+/// Encodes a rigid body's inertia in Featherstone's spatial vector convention:
+/// the upper-left 3×3 block is the mass, the upper-right is the COM skew term,
+/// and the lower-right is the rotational inertia about the COM.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SpatialInertia<T: Copy> {
+    /// Full 6×6 spatial mass matrix.
     pub matrix: Matrix6<T>,
+    /// Total mass.
     pub mass: T,
+    /// Center of mass position relative to the reference frame origin.
     pub com: Vector3<T>,
+    /// Rotational inertia about the center of mass (3×3).
     pub inertia_com: Matrix3<T>,
 }
 
 impl<T: Copy + Scalar> SpatialInertia<T> {
+    /// Construct from mass, center-of-mass offset, and rotational inertia about the COM.
     pub fn new(mass: T, com: Vector3<T>, inertia_com: Matrix3<T>) -> Self {
         let m = mass;
         let z = T::from(0.0).unwrap();
@@ -74,6 +106,7 @@ impl<T: Copy + Scalar> SpatialInertia<T> {
         }
     }
 
+    /// Transform this inertia to a new reference point displaced by `d` from the current COM.
     pub fn inertia_about(&self, d: &Vector3<T>) -> Self {
         let m = self.mass;
         let z = T::from(0.0).unwrap();
@@ -129,6 +162,7 @@ impl<T: Copy + Scalar> SpatialInertia<T> {
         }
     }
 
+    /// Compose (add) two inertias into an equivalent single inertia.
     pub fn compose(&self, other: &SpatialInertia<T>) -> Self {
         let mut new_matrix = self.matrix;
         for i in 0..6 {
@@ -161,6 +195,7 @@ impl<T: Copy + Scalar> SpatialInertia<T> {
         }
     }
 
+    /// Transform this inertia into a new coordinate frame using the 6×6 adjoint of `x`.
     pub fn transform(&self, x: &Isometry3<T>) -> Self {
         let ad = spatial_inertia_transform(x);
         let z = T::from(0.0).unwrap();
@@ -185,6 +220,7 @@ impl<T: Copy + Scalar> SpatialInertia<T> {
         }
     }
 
+    /// Compute spatial momentum `h = I * v`.
     pub fn momentum(&self, velocity: &SpatialVelocity<T>) -> SpatialMomentum<T> {
         let d = velocity.0.data;
         let v6 = Vector6::new([
@@ -197,6 +233,7 @@ impl<T: Copy + Scalar> SpatialInertia<T> {
         )
     }
 
+    /// Alias for [`Self::new`].
     pub fn from_rotational(mass: T, com: Vector3<T>, inertia_com: Matrix3<T>) -> Self {
         Self::new(mass, com, inertia_com)
     }
@@ -211,15 +248,21 @@ fn z<T: Copy + Scalar>() -> T {
 // RigidBody
 // ===========================================================================
 
+/// A rigid body defined by its spatial inertia, reference pose, and collision geometry.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RigidBody<T: Copy + Scalar> {
+    /// Spatial inertia tensor.
     pub spatial_inertia: SpatialInertia<T>,
+    /// World-frame pose (position + orientation).
     pub transform: Isometry3<T>,
+    /// Body identifier.
     pub name: &'static str,
+    /// Collision geometry index (for contact detection).
     pub collision_geometry: usize,
 }
 
 impl<T: Copy + Scalar> RigidBody<T> {
+    /// Construct a new rigid body definition.
     pub fn new(
         spatial_inertia: SpatialInertia<T>,
         transform: Isometry3<T>,
@@ -239,15 +282,22 @@ impl<T: Copy + Scalar> RigidBody<T> {
 // Cross-product operator structs
 // ===========================================================================
 
+/// Motion cross-product operator `v×` (Featherstone `crm`).
+///
+/// Encapsulates an angular velocity vector and applies the cross-product to a
+/// spatial velocity.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MotionCross<T: Copy> {
+    /// Angular velocity vector defining the cross-product operator.
     pub angular: Vector3<T>,
 }
 
 impl<T: Copy + Scalar> MotionCross<T> {
+    /// Build from an angular velocity vector.
     pub fn new(angular: Vector3<T>) -> Self {
         MotionCross { angular }
     }
+    /// Apply the motion cross-product operator `v×` to a spatial velocity.
     pub fn apply(&self, v: &SpatialVelocity<T>) -> SpatialVelocity<T> {
         motion_cross(
             &SpatialVelocity::new(self.angular, Vector3::new([z(); 3])),
@@ -256,15 +306,22 @@ impl<T: Copy + Scalar> MotionCross<T> {
     }
 }
 
+/// Force cross-product operator `v×*` (Featherstone `crf`).
+///
+/// Encapsulates an angular (moment) vector and applies the cross-product to a
+/// spatial force.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ForceCross<T: Copy> {
+    /// Angular (moment) vector defining the cross-product operator.
     pub angular: Vector3<T>,
 }
 
 impl<T: Copy + Scalar> ForceCross<T> {
+    /// Build from an angular vector.
     pub fn new(angular: Vector3<T>) -> Self {
         ForceCross { angular }
     }
+    /// Apply the force cross-product operator `v×*` to a spatial force.
     pub fn apply(&self, f: &SpatialForce<T>) -> SpatialVelocity<T> {
         force_cross(&SpatialForce::new(self.angular, Vector3::new([z(); 3])), f)
     }
@@ -274,6 +331,7 @@ impl<T: Copy + Scalar> ForceCross<T> {
 // Free helpers
 // ===========================================================================
 
+/// Compute the skew-symmetric cross-product matrix for a vector `v`.
 #[inline]
 pub fn skew_matrix<T: Copy + Scalar>(v: &Vector3<T>) -> Matrix3<T> {
     let z = T::from(0.0).unwrap();

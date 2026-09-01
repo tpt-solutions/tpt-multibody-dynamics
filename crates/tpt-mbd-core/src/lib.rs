@@ -15,3 +15,8 @@ pub mod frame;
 pub mod generalized;
 pub mod inertia;
 pub mod spatial;
+
+pub use frame::{Frame, TransformTree};
+pub use generalized::{GeneralizedAccelerations, GeneralizedCoordinates, GeneralizedVelocities};
+pub use inertia::{ForceCross, MotionCross, RigidBody, SpatialInertia};
+pub use spatial::{SpatialForce, SpatialMomentum, SpatialVelocity};

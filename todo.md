@@ -20,25 +20,43 @@
 > `tpt-fem-mesh`, `tpt-fem-elasticity`, `tpt-fem-eigen`) already exist as
 > real, buildable crates in the sibling `tpt-math` / `tpt-fem` repos.
 
+## Status — 2026-09-01
+
+| Phase | Crate | State |
+|-------|-------|-------|
+| 0 | bootstrap | ✅ done — workspace builds (`cargo build --workspace` green) |
+| 1 | `tpt-mbd-core` | ✅ implementation complete (~1000 LOC, 9 unit tests pass); QA pending (doctests thin, `cargo deny`/no_std CI not run, registry N/A) |
+| 2 | `tpt-mbd-kinematics` | 🟡 core FK/IK/Jacobian/singularity done (~840 LOC, tests pass); PoE, parallel/loop-closure, degrees support, full manipulator test matrix outstanding |
+| 3 | `tpt-mbd-joints` | 🟡 in progress, uncommitted — joint types, constraint trait (revolute/spherical), Baumgarte, coord partitioning, augmented Lagrangian, friction (Coulomb/viscous/Stribeck). Missing: full joint set, nonholonomic/gear, joint limits, reaction forces, drift detection, tests |
+| 4 | `tpt-mbd-contact` | ⬜ scaffold only (stub lib) |
+| 5 | `tpt-mbd-flexible` | ⬜ scaffold only (stub lib) |
+| 6 | `tpt-mbd-system` | ⬜ scaffold only (stub lib) |
+| 7 | `tpt-mbd` (umbrella) | 🟡 scaffolded with feature-gated re-exports; builder/`MbdError`/high-level API/VTK/tests outstanding |
+
+Checkbox legend: `[x]` done · `[~]` partial (see inline note) · `[ ]` not started.
+
+> Note: no `tpt-rust-map/registry.toml` present in this repo — the
+> `status = "planned" → "git"` steps are not actionable here.
+
 ## Phase 0 — Repo Bootstrap
 
-- [ ] Copy `template/Cargo.toml` → root `Cargo.toml`, adapt
+- [x] Copy `template/Cargo.toml` → root `Cargo.toml`, adapt
       `[workspace.package]` for `tpt-mbd` (description, repository/homepage
       URLs under `tpt-solutions`)
-- [ ] Copy `template/rust-toolchain.toml`
-- [ ] Copy `template/rustfmt.toml`
-- [ ] Copy `template/deny.toml`
-- [ ] Copy `template/.github/workflows/ci.yml` (keep the `no_std` job —
+- [x] Copy `template/rust-toolchain.toml`
+- [x] Copy `template/rustfmt.toml`
+- [x] Copy `template/deny.toml`
+- [x] Copy `template/.github/workflows/ci.yml` (keep the `no_std` job —
       `tpt-mbd-core` is `no_std`-compatible)
-- [ ] Copy `template/LICENSE-MIT` and `template/LICENSE-APACHE`
-- [ ] Create `crates/` directory
-- [ ] Add a Rust `.gitignore`
-- [ ] Write root `README.md`
-- [ ] Adapt `spec.txt` from `template/spec.txt` conventions (already have a
+- [x] Copy `template/LICENSE-MIT` and `template/LICENSE-APACHE`
+- [x] Create `crates/` directory
+- [x] Add a Rust `.gitignore`
+- [x] Write root `README.md`
+- [x] Adapt `spec.txt` from `template/spec.txt` conventions (already have a
       full spec at repo root — reconcile formatting only)
-- [ ] `git init` (local only — no GitHub remote/push)
-- [ ] Initial commit
-- [ ] Sanity check: `cargo build` succeeds
+- [x] `git init` (local only — no GitHub remote/push)
+- [x] Initial commit
+- [x] Sanity check: `cargo build` succeeds
 
 ## Per-Crate Checklist Template
 
@@ -68,37 +86,38 @@ coordinates, spatial inertia. No internal `tpt-mbd-*` deps. Depends on:
 `tpt-math-spatial`, `tpt-math-geometry`, `tpt-math-units`,
 (blocked-external, see note above) `tpt-sci-physics-rigid`.*
 
-- [ ] Scaffold `crates/tpt-mbd-core/`
-- [ ] Wire deps: `tpt-math-spatial`, `tpt-math-geometry`, `tpt-math-units`
-- [ ] Implement 6D spatial vector types: `SpatialVelocity` (twist:
+- [x] Scaffold `crates/tpt-mbd-core/`
+- [x] Wire deps: `tpt-math-spatial`, `tpt-math-geometry`, `tpt-math-units`
+- [x] Implement 6D spatial vector types: `SpatialVelocity` (twist:
       angular + linear), `SpatialForce` (wrench: torque + force),
       `SpatialMomentum`
-- [ ] Implement `SpatialInertia` (6×6 spatial mass matrix: mass, center of
+- [x] Implement `SpatialInertia` (6×6 spatial mass matrix: mass, center of
       mass, rotational inertia)
-- [ ] Implement spatial cross-product operators: motion cross-product
+- [x] Implement spatial cross-product operators: motion cross-product
       `v×` and force cross-product `v×*`
-- [ ] Implement `RigidBody` type (spatial inertia + reference frame +
+- [x] Implement `RigidBody` type (spatial inertia + reference frame +
       collision geometry)
-- [ ] Implement `Frame` (origin + unit-quaternion orientation),
+- [x] Implement `Frame` (origin + unit-quaternion orientation),
       `Isometry3` (rigid transformation), `TransformTree` (hierarchical
       body connections)
-- [ ] Implement `GeneralizedCoordinates`, `GeneralizedVelocities`,
+- [x] Implement `GeneralizedCoordinates`, `GeneralizedVelocities`,
       `GeneralizedAccelerations` types
-- [ ] Implement inertia operations: spatial inertia composition,
+- [x] Implement inertia operations: spatial inertia composition,
       frame-to-frame transformation, conversion to/from 3×3 rotational
       inertia about center of mass
-- [ ] Make all core types `no_std` compatible with optional `alloc`
+- [x] Make all core types `no_std` compatible with optional `alloc`
       feature for dynamic system sizes
-- [ ] Unit-safe accessors via `tpt-math-units` for all physical quantities
+- [x] Unit-safe accessors via `tpt-math-units` for all physical quantities
       (length, mass, time, angle, angular velocity)
-- [ ] Unit tests: spatial cross-product identities, spatial inertia
+- [x] Unit tests: spatial cross-product identities, spatial inertia
       composition against hand-computed values, quaternion normalization
-- [ ] Doctests
-- [ ] Rustdoc (crate-level + public API)
+- [~] Doctests (only `spatial.rs` has runnable examples — extend to
+      `frame`/`inertia`/`generalized`)
+- [x] Rustdoc (crate-level + public API)
 - [ ] `cargo fmt` / `clippy` clean
 - [ ] `cargo deny check` clean
 - [ ] `no_std` CI job passes (default-`alloc`-off build)
-- [ ] registry.toml: `tpt-mbd-core` → `"git"`
+- [ ] registry.toml: `tpt-mbd-core` → `"git"` *(no registry in repo)*
 
 ## Phase 2 — tpt-mbd-kinematics
 
@@ -106,42 +125,44 @@ coordinates, spatial inertia. No internal `tpt-mbd-*` deps. Depends on:
 `tpt-mbd-core`, `tpt-math-linalg`, `tpt-math-optimize-general`,
 `tpt-math-units`.*
 
-- [ ] Scaffold `crates/tpt-mbd-kinematics/`
-- [ ] Wire deps: `tpt-mbd-core`, `tpt-math-linalg`,
+- [x] Scaffold `crates/tpt-mbd-kinematics/`
+- [x] Wire deps: `tpt-mbd-core`, `tpt-math-linalg`,
       `tpt-math-optimize-general`
-- [ ] Implement `DhChain` (standard + modified DH parameter convention:
+- [x] Implement `DhChain` (standard + modified DH parameter convention:
       link length, link twist, link offset, joint angle)
 - [ ] Implement Product of Exponentials (PoE) formulation: screw axes per
       joint, `T = exp(ξ₁θ₁)...exp(ξₙθₙ)M` forward kinematics
-- [ ] Implement forward kinematics: end-effector pose from joint
+- [x] Implement forward kinematics: end-effector pose from joint
       coordinates, O(n) recursive transformation composition
-- [ ] Implement geometric Jacobian (base-frame spatial velocity) via
+- [x] Implement geometric Jacobian (base-frame spatial velocity) via
       recursive Newton-Euler-style propagation, O(n)
-- [ ] Implement analytical Jacobian (end-effector-frame velocity)
-- [ ] Implement Newton-Raphson IK with damped least squares
+- [x] Implement analytical Jacobian (end-effector-frame velocity)
+- [x] Implement Newton-Raphson IK with damped least squares
       (Levenberg-Marquardt) for redundant manipulators
-- [ ] Implement Jacobian transpose IK method
-- [ ] Implement closed-form 6-DOF IK for spherical-wrist manipulators
+- [x] Implement Jacobian transpose IK method
+- [x] Implement closed-form 6-DOF IK for spherical-wrist manipulators
       (PUMA-style kinematic decoupling)
 - [ ] Implement numerical IK with task-space tracking for parallel
       mechanisms
-- [ ] Implement singularity detection: manipulability measure
+- [~] Implement singularity detection: manipulability measure
       (det(JJᵀ)), Jacobian condition number, distance-to-singularity via
-      eigenvalue analysis
-- [ ] Implement workspace analysis: reachable-workspace boundary tracing,
+      eigenvalue analysis *(manipulability + condition number done;
+      eigenvalue distance-to-singularity pending)*
+- [x] Implement workspace analysis: reachable-workspace boundary tracing,
       dexterous workspace identification
 - [ ] Implement closed-chain / loop-closure constraint handling (parallel
       mechanisms, four-bar, Stewart platform)
 - [ ] Support radians and degrees for angular quantities (unit-safe)
-- [ ] Unit tests: forward kinematics vs. analytical solutions for PUMA
+- [~] Unit tests: forward kinematics vs. analytical solutions for PUMA
       560, KUKA KR6, Stanford arm (position < 1e-9 m, orientation
       < 1e-9 rad); IK convergence < 1e-6 m against closed-form targets;
-      manipulability at known singular configurations
-- [ ] Doctests
-- [ ] Rustdoc
+      manipulability at known singular configurations *(basic tests pass;
+      full standard-manipulator matrix outstanding)*
+- [~] Doctests
+- [x] Rustdoc
 - [ ] `cargo fmt` / `clippy` clean
 - [ ] `cargo deny check` clean
-- [ ] registry.toml: `tpt-mbd-kinematics` → `"git"`
+- [ ] registry.toml: `tpt-mbd-kinematics` → `"git"` *(no registry in repo)*
 
 ## Phase 3 — tpt-mbd-joints
 
@@ -149,17 +170,19 @@ coordinates, spatial inertia. No internal `tpt-mbd-*` deps. Depends on:
 non-holonomic. Depends on: `tpt-mbd-core`, `tpt-math-linalg`,
 `tpt-math-numeric`.*
 
-- [ ] Scaffold `crates/tpt-mbd-joints/`
-- [ ] Wire deps: `tpt-mbd-core`, `tpt-math-linalg`, `tpt-math-numeric`
-- [ ] Implement joint types: revolute, prismatic, spherical/ball,
-      universal/Cardan, cylindrical, planar, fixed
-- [ ] Implement `JointConstraint` trait for custom user-defined joints
-- [ ] Implement constraint formulation: constraint equations Φ(q) = 0,
+- [x] Scaffold `crates/tpt-mbd-joints/`
+- [x] Wire deps: `tpt-mbd-core`, `tpt-math-linalg`, `tpt-math-numeric`
+- [~] Implement joint types: revolute, prismatic, spherical/ball,
+      universal/Cardan, cylindrical, planar, fixed *(generic `JointType`
+      with DOF/axis model; per-type constraint impls only for revolute +
+      spherical so far)*
+- [x] Implement `JointConstraint` trait for custom user-defined joints
+- [x] Implement constraint formulation: constraint equations Φ(q) = 0,
       constraint Jacobian Φ_q = ∂Φ/∂q, constraint violation metrics
-- [ ] Implement Baumgarte stabilization (Φ̈ + 2αΦ̇ + β²Φ = 0, tunable α, β)
-- [ ] Implement coordinate partitioning (independent/dependent DOF split,
+- [x] Implement Baumgarte stabilization (Φ̈ + 2αΦ̇ + β²Φ = 0, tunable α, β)
+- [x] Implement coordinate partitioning (independent/dependent DOF split,
       Newton-Raphson constraint solve per step)
-- [ ] Implement augmented Lagrangian stabilization (penalty + multiplier)
+- [x] Implement augmented Lagrangian stabilization (penalty + multiplier)
 - [ ] Implement `NonholonomicConstraint` trait; rolling-without-slipping
       velocity-level constraints; gear constraints (linear joint-velocity
       relationship)
@@ -167,7 +190,8 @@ non-holonomic. Depends on: `tpt-mbd-core`, `tpt-math-linalg`,
       Mq̈ + Φ_qᵀλ = τ, exposed as joint reaction forces/torques
 - [ ] Implement joint limits: soft limits (spring-damper penalty), hard
       limits (constraint formulation)
-- [ ] Implement joint friction: Coulomb + viscous with regularization
+- [x] Implement joint friction: Coulomb + viscous with regularization
+      *(+ Stribeck/stick-slip regime)*
 - [ ] Implement constraint drift detection + re-projection trigger
       (default threshold 1e-6)
 - [ ] Support both minimal-coordinate (reduced) and maximal-coordinate
@@ -176,10 +200,10 @@ non-holonomic. Depends on: `tpt-mbd-core`, `tpt-math-linalg`,
       four-bar linkage, slider-crank; energy drift < 1e-4 over 10,000
       steps; Baumgarte parameter auto-tuning sanity check
 - [ ] Doctests
-- [ ] Rustdoc
-- [ ] `cargo fmt` / `clippy` clean
+- [~] Rustdoc *(module docs present; not all public items)*
+- [ ] `cargo fmt` / `clippy` clean *(57 warnings, fmt not clean)*
 - [ ] `cargo deny check` clean
-- [ ] registry.toml: `tpt-mbd-joints` → `"git"`
+- [ ] registry.toml: `tpt-mbd-joints` → `"git"` *(no registry in repo)*
 
 ## Phase 4 — tpt-mbd-contact
 
@@ -188,8 +212,9 @@ augmented-Lagrangian force models, friction, impact, wear. Depends on:
 `tpt-mbd-core`, `tpt-math-linalg`, `tpt-math-optimize-general`,
 `tpt-math-numeric`.*
 
-- [ ] Scaffold `crates/tpt-mbd-contact/`
-- [ ] Wire deps: `tpt-mbd-core`, `tpt-math-linalg`,
+- [x] Scaffold `crates/tpt-mbd-contact/` *(stub lib + empty modules:
+      ccd, detection, contact, friction, impact, wear)*
+- [x] Wire deps: `tpt-mbd-core`, `tpt-math-linalg`,
       `tpt-math-optimize-general`
 - [ ] Implement continuous collision detection (CCD): conservative
       advancement (convex shapes), adaptive bisection (general shapes),
@@ -235,8 +260,9 @@ augmented-Lagrangian force models, friction, impact, wear. Depends on:
 `tpt-mbd-core`, `tpt-fem-mesh`, `tpt-fem-elasticity`, `tpt-fem-eigen`,
 `tpt-math-linalg-dense`.*
 
-- [ ] Scaffold `crates/tpt-mbd-flexible/`
-- [ ] Wire deps: `tpt-mbd-core`, `tpt-fem-mesh`, `tpt-fem-elasticity`,
+- [x] Scaffold `crates/tpt-mbd-flexible/` *(stub lib + empty modules:
+      cms, damping, floating_frame, ancf)*
+- [x] Wire deps: `tpt-mbd-core`, `tpt-fem-mesh`, `tpt-fem-elasticity`,
       `tpt-fem-eigen`, `tpt-math-linalg-dense`
 - [ ] Implement Craig-Bampton method: boundary/interior FE DOF
       partitioning, fixed-interface normal modes (eigenvectors of K_ii
@@ -274,8 +300,9 @@ augmented-Lagrangian force models, friction, impact, wear. Depends on:
 `tpt-mbd-kinematics`, `tpt-mbd-joints`, `tpt-mbd-contact`,
 `tpt-mbd-flexible`, `tpt-math-linalg`, `tpt-math-numeric`.*
 
-- [ ] Scaffold `crates/tpt-mbd-system/`
-- [ ] Wire deps: `tpt-mbd-core`, `tpt-mbd-kinematics`, `tpt-mbd-joints`,
+- [x] Scaffold `crates/tpt-mbd-system/` *(stub lib + empty modules:
+      system, integration, forces, actuators)*
+- [x] Wire deps: `tpt-mbd-core`, `tpt-mbd-kinematics`, `tpt-mbd-joints`,
       `tpt-mbd-contact`, `tpt-mbd-flexible`, `tpt-math-linalg`,
       `tpt-math-numeric`, `rayon`
 - [ ] Implement `MultibodySystem` assembly: bodies + joints + constraints
@@ -326,13 +353,14 @@ augmented-Lagrangian force models, friction, impact, wear. Depends on:
 visualization utilities. Depends on: all `tpt-mbd-*` crates (each behind
 its own feature).*
 
-- [ ] Scaffold `crates/tpt-mbd/`
-- [ ] Wire deps: `tpt-mbd-core` (always), `tpt-mbd-kinematics` (feature
+- [x] Scaffold `crates/tpt-mbd/`
+- [x] Wire deps: `tpt-mbd-core` (always), `tpt-mbd-kinematics` (feature
       `kinematics`), `tpt-mbd-joints` (feature `joints`),
       `tpt-mbd-contact` (feature `contact`), `tpt-mbd-flexible` (feature
       `flexible`), `tpt-mbd-system` (feature `system`) — flat feature
       tree, no nested/implied features
-- [ ] Verify no-features build re-exports only `tpt-mbd-core`
+- [~] Verify no-features build re-exports only `tpt-mbd-core` *(re-exports
+      are feature-gated in `lib.rs`; feature-matrix CI check not yet added)*
 - [ ] Implement builder pattern for common workflows
       (`MultibodySystem::builder().add_body(..).add_joint(..).build()`)
 - [ ] Implement unified `MbdError` wrapping solver-specific errors with

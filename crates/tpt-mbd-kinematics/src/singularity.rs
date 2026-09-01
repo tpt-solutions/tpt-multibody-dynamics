@@ -5,6 +5,21 @@
 //! - Jacobian condition number
 //! - Distance-to-singularity via eigenvalue analysis
 //! - Reachable workspace boundary tracing
+//!
+//! # Examples
+//!
+//! ```ignore
+//! use tpt_mbd_kinematics::singularity::{SingularityAnalysis, distance_to_singularity};
+//! use tpt_mbd_kinematics::chain::DhLink;
+//!
+//! let links = vec![
+//!     DhLink::new(0.0, 0.0, 0.24336, 0.0),
+//!     DhLink::new(0.280, 0.0, 0.0, 0.0),
+//! ];
+//! let analysis = SingularityAnalysis::analyze(&links, &[0.0, 0.0]);
+//! let dist = distance_to_singularity(&links, &[0.0, 0.0]);
+//! assert!(dist >= 0.0);
+//! ```
 
 use tpt_math_geometry::{Isometry3, UnitQuaternion};
 
@@ -107,3 +122,111 @@ fn workspace_point_from_isometry(pose: &Isometry3<f64>) -> WorkspacePoint {
         orientation,
     }
 }
+
+/// Compute the distance to the nearest singularity via eigenvalue analysis.
+///
+/// Computes the eigenvalues of `J·Jᵀ` and returns the square root of the
+/// minimum eigenvalue, which equals the minimum singular value of `J`.
+/// A distance of zero indicates a singular configuration.
+pub fn distance_to_singularity(links: &[DhLink], joint_angles: &[f64]) -> f64 {
+    let jac = geometric_jacobian(links, joint_angles);
+    let n = jac.num_joints();
+    let m = 6.min(n);
+
+    // Build J·Jᵀ as 6×6
+    let mut jjt = [[0.0f64; 6]; 6];
+    for row in 0..6 {
+        for col in 0..6 {
+            let mut sum = 0.0;
+            for k in 0..m {
+                let j_row_k = if row < 3 {
+                    jac.angular_column(k)[row]
+                } else {
+                    jac.linear_column(k)[row - 3]
+                };
+                let j_col_k = if col < 3 {
+                    jac.angular_column(k)[col]
+                } else {
+                    jac.linear_column(k)[col - 3]
+                };
+                sum += j_row_k * j_col_k;
+            }
+            jjt[row][col] = sum;
+        }
+    }
+
+    let eigenvalues = eigenvalues_symmetric_6x6(&jjt);
+    let mut min_eig = eigenvalues[0];
+    for i in 1..6 {
+        if eigenvalues[i] < min_eig {
+            min_eig = eigenvalues[i];
+        }
+    }
+
+    if min_eig < 0.0 {
+        0.0
+    } else {
+        min_eig.sqrt()
+    }
+}
+
+/// Compute all eigenvalues of a symmetric 6×6 matrix using Jacobi rotations.
+fn eigenvalues_symmetric_6x6(a: &[[f64; 6]; 6]) -> [f64; 6] {
+    let mut a = *a;
+    let mut eigenvalues = [0.0f64; 6];
+
+    for _ in 0..100 {
+        // Find largest off-diagonal element
+        let mut max_val = 0.0;
+        let mut p = 0usize;
+        let mut q = 1usize;
+        for i in 0..6 {
+            for j in (i + 1)..6 {
+                if a[i][j].abs() > max_val {
+                    max_val = a[i][j].abs();
+                    p = i;
+                    q = j;
+                }
+            }
+        }
+
+        if max_val < 1e-12 {
+            break;
+        }
+
+        // Compute rotation angle
+        let app = a[p][p];
+        let aqq = a[q][q];
+        let apq = a[p][q];
+        let two = 2.0;
+        let phi = 0.5 * ((aqq - app) / apq).atan2(two);
+        let c = phi.cos();
+        let s = phi.sin();
+
+        // Apply Givens rotation: A' = R^T A R
+        for i in 0..6 {
+            if i != p && i != q {
+                let aip = a[i][p];
+                let aiq = a[i][q];
+                a[i][p] = c * aip - s * aiq;
+                a[p][i] = a[i][p];
+                a[i][q] = s * aip + c * aiq;
+                a[q][i] = a[i][q];
+            }
+        }
+
+        let app_new = c * c * app - two * s * c * apq + s * s * aqq;
+        let aqq_new = s * s * app + two * s * c * apq + c * c * aqq;
+        a[p][p] = app_new;
+        a[q][q] = aqq_new;
+        a[p][q] = (c * c - s * s) * apq + s * c * (aqq - app);
+        a[q][p] = a[p][q];
+    }
+
+    for i in 0..6 {
+        eigenvalues[i] = a[i][i];
+    }
+
+    eigenvalues
+}
+

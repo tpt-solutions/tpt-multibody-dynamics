@@ -26,11 +26,6 @@ impl DhLink {
 
     /// Build the homogeneous transform for this link (standard DH).
     pub fn transform(&self) -> Isometry3<f64> {
-        let ct = self.theta.cos();
-        let st = self.theta.sin();
-        let ca = self.alpha.cos();
-        let sa = self.alpha.sin();
-
         let rot_z = Rotation3::from_axis_angle(&Vector3::new([0.0, 0.0, 1.0]), self.theta);
         let trans_z = Translation::new(Vector3::new([0.0, 0.0, self.d]));
         let trans_x = Translation::new(Vector3::new([self.a, 0.0, 0.0]));

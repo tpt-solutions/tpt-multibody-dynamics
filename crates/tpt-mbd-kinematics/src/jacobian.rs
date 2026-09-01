@@ -4,9 +4,6 @@
 //! velocity in the base frame. The analytical Jacobian relates joint rates
 //! to end-effector linear/angular velocity in the end-effector frame.
 
-use tpt_math_geometry::Isometry3;
-use tpt_math_linalg_fixed::Vector3;
-
 use crate::chain::DhLink;
 
 /// Compute the analytical Jacobian for an end-effector.

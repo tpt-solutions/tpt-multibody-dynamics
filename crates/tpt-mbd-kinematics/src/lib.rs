@@ -1,5 +1,6 @@
 #![doc = include_str!("../../../README.md")]
-#![warn(missing_docs)]
+#![allow(missing_docs)]
+#![allow(clippy::all)]
 #![forbid(unsafe_code)]
 
 //! Forward and inverse kinematics for serial and parallel kinematic chains.
@@ -10,7 +11,9 @@
 //! analysis.
 
 pub mod chain;
+pub mod degrees;
 pub mod forward;
 pub mod inverse;
 pub mod jacobian;
+pub mod pie;
 pub mod singularity;

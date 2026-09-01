@@ -44,7 +44,6 @@ pub fn geometric_jacobian(links: &[DhLink], joint_angles: &[f64]) -> Jacobian {
         t_world = t_world * t_i;
 
         let z_i = Vector3::new([0.0, 0.0, 1.0]);
-        let p_i = Vector3::new([0.0, 0.0, 0.0]);
 
         let z = t_world.rotation.transform_vector(&z_i);
         let p = t_world.translation.vector;
