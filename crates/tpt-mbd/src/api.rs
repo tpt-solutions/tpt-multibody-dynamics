@@ -1,4 +1,4 @@
-use crate::error::{MbdError, Result, SystemErrorKind};
+use crate::error::{MbdError, Result};
 #[cfg(feature = "kinematics")]
 use tpt_math_geometry::Isometry3;
 #[cfg(feature = "kinematics")]
@@ -77,20 +77,17 @@ pub fn inverse_kinematics(_chain: &(), _target: &(), _initial: &[f64]) -> Result
 
 /// Compute inverse dynamics (constraint forces for given accelerations).
 ///
-/// Requires the `system` feature.  Returns an error until `tpt-mbd-system`
-/// exposes an inverse-dynamics implementation.
+/// Requires the `system` feature.  Returns the generalized forces `τ = M·q̈`
+/// computed from the system mass matrix and the provided accelerations.
 #[cfg(feature = "system")]
 pub fn inverse_dynamics(
-    _system: &MultibodySystem,
+    system: &MultibodySystem,
     _q: &[f64],
     _qdot: &[f64],
-    _qddot: &[f64],
+    qddot: &[f64],
     _tau: &[f64],
 ) -> Result<Vec<f64>> {
-    Err(MbdError::DynamicsError {
-        message: "inverse dynamics is not yet implemented in tpt-mbd-system".to_string(),
-        kind: crate::error::DynamicsErrorKind::SolverNotConverged,
-    })
+    Ok(system.inverse_dynamics(qddot))
 }
 
 /// Compute inverse dynamics (stub, no `system` feature).
@@ -104,7 +101,7 @@ pub fn inverse_dynamics(
 ) -> Result<Vec<f64>> {
     Err(MbdError::SystemError {
         message: "system feature not enabled".to_string(),
-        kind: SystemErrorKind::Unconstrained,
+        kind: crate::error::SystemErrorKind::Unconstrained,
     })
 }
 

@@ -15,5 +15,6 @@ pub mod degrees;
 pub mod forward;
 pub mod inverse;
 pub mod jacobian;
+pub mod loop_closure;
 pub mod pie;
 pub mod singularity;

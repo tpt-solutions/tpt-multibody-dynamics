@@ -33,7 +33,7 @@ impl DhLink {
 
         let tz = Isometry3::new(trans_z, rot_z);
         let tx = Isometry3::new(trans_x, rot_x);
-        tx * tz
+        tz * tx
     }
 }
 

@@ -11,11 +11,8 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use num_traits::Float;
-
 use crate::constraint::JointConstraint;
 use crate::joint::JointType;
-use crate::stabilization::CoordinatePartitioning;
 
 /// A minimal-coordinate (reduced) formulation for a multibody system.
 ///
@@ -183,8 +180,8 @@ pub enum Formulation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::boxed::Box;
     use crate::constraint::SphericalConstraint;
+    use alloc::boxed::Box;
 
     #[test]
     fn test_minimal_formulation_creation() {

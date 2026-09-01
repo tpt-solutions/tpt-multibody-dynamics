@@ -86,37 +86,14 @@ pub fn twist_exponential(screw: &ScrewAxis, theta: f64) -> Isometry3<f64> {
         ],
     ]);
 
-    let vx = v.data[0];
-    let vy = v.data[1];
-    let vz = v.data[2];
-
-    let g00 = angle - wx * wx * angle + wx * wx * angle * c + wx * wy * s - wx * wy * angle * s
-        + wx * wz * s + wx * wz * angle * s;
-    let g01 = wx * wy * angle - wx * wy * angle * c - wz * s + wz * angle * s
-        + wy * wz * angle - wy * wz * angle * c - wx * s;
-    let g02 = wx * wz * angle - wx * wz * angle * c + wy * s - wy * angle * s
-        + wy * wz * angle - wy * wz * angle * c - wx * s;
-
-    let g10 = wy * wx * angle - wy * wx * angle * c + wz * s - wz * angle * s
-        + wx * wy * angle - wx * wy * angle * c - wz * s;
-    let g11 = angle - wy * wy * angle + wy * wy * angle * c + wz * wx * s + wz * wx * angle * s
-        + wy * wz * angle - wy * wz * angle * c + wx * s;
-    let g12 = wy * wz * angle - wy * wz * angle * c - wx * s + wx * angle * s
-        + wz * wx * angle - wz * wx * angle * c - wy * s;
-
-    let g20 = wz * wx * angle - wz * wx * angle * c - wy * s + wy * angle * s
-        + wx * wz * angle - wx * wz * angle * c + wy * s;
-    let g21 = wz * wy * angle - wz * wy * angle * c + wx * s - wx * angle * s
-        + wy * wz * angle - wy * wz * angle * c + wx * s;
-    let g22 = angle - wz * wz * angle + wz * wz * angle * c + wx * wy * s - wx * wy * angle * s
-        + wy * wx * s - wy * wx * angle * s;
-
-    let t0 = (vx * g00 + vy * g01 + vz * g02) / omega_norm;
-    let t1 = (vx * g10 + vy * g11 + vz * g12) / omega_norm;
-    let t2 = (vx * g20 + vy * g21 + vz * g22) / omega_norm;
-
-    let translation = Translation::new(Vector3::new([t0, t1, t2]));
     let rotation = Rotation3::from_matrix_unchecked(r);
+
+    let cross_ov = omega_hat.cross(&v);
+    let cross_o_cross_ov = omega_hat.cross(&cross_ov);
+
+    let h = v * theta - cross_ov * one_minus_c + cross_o_cross_ov * (angle - s);
+
+    let translation = Translation::new(rotation.transform_vector(&h));
     Isometry3::new(translation, rotation)
 }
 
@@ -134,7 +111,11 @@ pub fn twist_exponential(screw: &ScrewAxis, theta: f64) -> Isometry3<f64> {
 /// # Returns
 ///
 /// The end-effector pose in the base frame.
-pub fn poe_forward_kinematics(screws: &[ScrewAxis], thetas: &[f64], home: Isometry3<f64>) -> Isometry3<f64> {
+pub fn poe_forward_kinematics(
+    screws: &[ScrewAxis],
+    thetas: &[f64],
+    home: Isometry3<f64>,
+) -> Isometry3<f64> {
     let mut t = Isometry3::identity();
     for (i, screw) in screws.iter().enumerate() {
         let theta = thetas.get(i).copied().unwrap_or(0.0);
@@ -151,8 +132,7 @@ pub fn poe_forward_kinematics(screws: &[ScrewAxis], thetas: &[f64], home: Isomet
 /// a point on that axis.
 pub fn dh_to_screw_axes(links: &[DhLink]) -> Vec<ScrewAxis> {
     let mut axes = Vec::new();
-    let mut z_prev = Vector3::new([0.0, 0.0, 1.0]);
-    let mut o_prev = Vector3::new([0.0, 0.0, 0.0]);
+    let mut t_acc = Isometry3::identity();
 
     for link in links {
         let theta = link.theta;
@@ -167,14 +147,14 @@ pub fn dh_to_screw_axes(links: &[DhLink]) -> Vec<ScrewAxis> {
 
         let t_i = Isometry3::new(tz, rz) * Isometry3::new(tx, rx);
 
-        let z_i = t_i.rotation.transform_vector(&z_prev);
-        let o_i = t_i.translation.vector + t_i.rotation.transform_vector(&o_prev);
-
-        let screw = ScrewAxis::revolute(z_i, o_i);
+        let z = t_acc
+            .rotation
+            .transform_vector(&Vector3::new([0.0, 0.0, 1.0]));
+        let o = t_acc.translation.vector;
+        let screw = ScrewAxis::revolute(z, o);
         axes.push(screw);
 
-        z_prev = z_i;
-        o_prev = o_i;
+        t_acc = t_acc * t_i;
     }
 
     axes
@@ -209,14 +189,11 @@ mod tests {
 
     #[test]
     fn test_twist_exponential_rotation_about_z() {
-        let screw = ScrewAxis::revolute(Vector3::new([0.0, 0.0, 1.0]), Vector3::new([0.0, 0.0, 0.0]));
+        let screw =
+            ScrewAxis::revolute(Vector3::new([0.0, 0.0, 1.0]), Vector3::new([0.0, 0.0, 0.0]));
         let t = twist_exponential(&screw, core::f64::consts::PI);
         let rot = t.rotation.matrix();
-        let expected = Matrix3::new([
-            [-1.0, 0.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ]);
+        let expected = Matrix3::new([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, 1.0]]);
         for i in 0..3 {
             for j in 0..3 {
                 assert!((rot.data[i][j] - expected.data[i][j]).abs() < 1e-10);
@@ -232,14 +209,23 @@ mod tests {
         let q = [core::f64::consts::FRAC_PI_2];
         let poe_pose = poe_forward_kinematics(&screws, &q, home);
         let dh_pose = forward_kinematics(&links, &q);
-        assert!((poe_pose.translation.vector.data[0] - dh_pose.translation.vector.data[0]).abs() < 1e-9);
-        assert!((poe_pose.translation.vector.data[1] - dh_pose.translation.vector.data[1]).abs() < 1e-9);
-        assert!((poe_pose.translation.vector.data[2] - dh_pose.translation.vector.data[2]).abs() < 1e-9);
+        assert!(
+            (poe_pose.translation.vector.data[0] - dh_pose.translation.vector.data[0]).abs() < 1e-9
+        );
+        assert!(
+            (poe_pose.translation.vector.data[1] - dh_pose.translation.vector.data[1]).abs() < 1e-9
+        );
+        assert!(
+            (poe_pose.translation.vector.data[2] - dh_pose.translation.vector.data[2]).abs() < 1e-9
+        );
     }
 
     #[test]
     fn test_poe_matches_dh_two_joints() {
-        let links = vec![DhLink::new(1.0, 0.0, 0.0, 0.0), DhLink::new(0.0, 0.0, 0.0, 0.0)];
+        let links = vec![
+            DhLink::new(1.0, 0.0, 0.0, 0.0),
+            DhLink::new(0.0, 0.0, 0.0, 0.0),
+        ];
         let screws = dh_to_screw_axes(&links);
         let home = dh_home_configuration(&links);
         let q = [0.5, -0.3];
@@ -248,7 +234,8 @@ mod tests {
         for i in 0..3 {
             for j in 0..3 {
                 assert!(
-                    (poe_pose.rotation.matrix().data[i][j] - dh_pose.rotation.matrix().data[i][j]).abs()
+                    (poe_pose.rotation.matrix().data[i][j] - dh_pose.rotation.matrix().data[i][j])
+                        .abs()
                         < 1e-9
                 );
             }

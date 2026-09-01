@@ -3,12 +3,19 @@ use std::fmt;
 #[cfg(feature = "system")]
 use tpt_mbd_system::system::MultibodySystem;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Supported time integration schemes for multibody simulations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum IntegratorMethod {
+    /// First-order accurate, symplectic. Good for real-time applications.
+    #[default]
     SemiImplicitEuler,
+    /// Second-order accurate, symplectic. Good for energy conservation.
     Verlet,
+    /// Generalized-α: high-frequency dissipation tunable via α_f, α_m.
     GeneralizedAlpha,
+    /// Hilber-Hughes-Taylor with numerical dissipation.
     HhtAlpha,
+    /// Newmark-β: unconditional stability for β ≥ 1/4, γ ≥ 1/2.
     NewmarkBeta,
 }
 
@@ -24,6 +31,10 @@ impl fmt::Display for IntegratorMethod {
     }
 }
 
+/// Builder for constructing a [`MultibodySystem`][tpt_mbd_system::system::MultibodySystem].
+///
+/// Provides a fluent API for adding bodies, joints, constraints, and contacts
+/// before building the assembled system.
 #[derive(Debug, Clone, Default)]
 pub struct MultibodySystemBuilder {
     name: String,
@@ -36,6 +47,7 @@ pub struct MultibodySystemBuilder {
 }
 
 impl MultibodySystemBuilder {
+    /// Create a new multibody system builder with the given name.
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -48,21 +60,25 @@ impl MultibodySystemBuilder {
         }
     }
 
+    /// Set the gravity vector `[gx, gy, gz]` in m/s².
     pub fn with_gravity(mut self, gravity: [f64; 3]) -> Self {
         self.gravity = gravity;
         self
     }
 
+    /// Set the time integration method.
     pub fn with_integrator(mut self, method: IntegratorMethod, _dt: f64) -> Self {
         self.integrator = method;
         self
     }
 
+    /// Add a rigid body to the system by name.
     pub fn add_body(mut self, body: impl Into<String>) -> Self {
         self.bodies.push(body.into());
         self
     }
 
+    /// Add a joint connecting two bodies by name.
     pub fn add_joint(
         mut self,
         ty: impl Into<String>,
@@ -73,16 +89,21 @@ impl MultibodySystemBuilder {
         self
     }
 
+    /// Add a named constraint to the system.
     pub fn add_constraint(mut self, c: impl Into<String>) -> Self {
         self.constraints.push(c.into());
         self
     }
 
+    /// Add a named contact manifold to the system.
     pub fn add_contact(mut self, manifold: impl Into<String>) -> Self {
         self.contacts.push(manifold.into());
         self
     }
 
+    /// Build the [`MultibodySystem`][tpt_mbd_system::system::MultibodySystem].
+    ///
+    /// Returns an error if no bodies have been added.
     pub fn build(self) -> Result<MultibodySystem> {
         if self.bodies.is_empty() {
             return Err(MbdError::SystemError {
@@ -93,6 +114,6 @@ impl MultibodySystemBuilder {
                 kind: SystemErrorKind::InvalidAssembly,
             });
         }
-        Ok(MultibodySystem)
+        Ok(MultibodySystem::new())
     }
 }

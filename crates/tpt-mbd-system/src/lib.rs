@@ -29,9 +29,11 @@
 //! ```
 
 pub mod actuators;
+pub mod builder;
 pub mod forces;
 pub mod integration;
 pub mod system;
+pub mod vtk;
 
 /// Dense column-major matrix alias (f64).
 pub type Matrix = tpt_math_linalg_dense::DMatrix<f64>;

@@ -102,6 +102,7 @@ mod tests {
     #[cfg(feature = "system")]
     #[test]
     fn builder_produces_valid_system() {
+        use crate::builder::MultibodySystemBuilder;
         let system = MultibodySystemBuilder::new("test_system")
             .add_body("ground")
             .add_body("link1")
@@ -114,11 +115,11 @@ mod tests {
     #[cfg(feature = "system")]
     #[test]
     fn builder_rejects_empty_system() {
-        let err = MultibodySystemBuilder::new("empty")
-            .build()
-            .expect_err("builder should fail with no bodies");
-        match err {
-            MbdError::SystemError { kind, .. } => {
+        use crate::builder::MultibodySystemBuilder;
+        let result = MultibodySystemBuilder::new("empty").build();
+        match result {
+            Ok(_) => panic!("expected SystemError"),
+            Err(MbdError::SystemError { kind, .. }) => {
                 assert_eq!(kind, crate::error::SystemErrorKind::InvalidAssembly);
             }
             _ => panic!("expected SystemError"),
@@ -155,7 +156,8 @@ mod tests {
     #[cfg(all(feature = "kinematics", feature = "system"))]
     #[test]
     fn simulate_returns_empty_result() {
-        use tpt_mbd_system::system::MultibodySystem;
+        use crate::api::simulate;
+        use crate::builder::MultibodySystemBuilder;
         let system = MultibodySystemBuilder::new("sim_test")
             .add_body("b1")
             .build()
@@ -188,21 +190,24 @@ mod tests {
     #[cfg(feature = "contact")]
     #[test]
     fn contact_feature_compiles() {
-        use tpt_mbd_contact::contact::Contact;
-        let _ = Contact;
+        use std::any::TypeId;
+        use tpt_mbd_contact::contact::HertzianContact;
+        let _ = TypeId::of::<HertzianContact>();
     }
 
     #[cfg(feature = "flexible")]
     #[test]
     fn flexible_feature_compiles() {
-        use tpt_mbd_flexible::cms::Cms;
-        let _ = Cms;
+        use std::any::TypeId;
+        use tpt_mbd_flexible::cms::CraigBampton;
+        let _ = TypeId::of::<CraigBampton>();
     }
 
     #[cfg(feature = "system")]
     #[test]
     fn system_feature_compiles() {
+        use std::any::TypeId;
         use tpt_mbd_system::system::MultibodySystem;
-        let _ = MultibodySystem;
+        let _ = TypeId::of::<MultibodySystem>();
     }
 }

@@ -62,3 +62,37 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
+
+  feature-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - ""
+          - "core"
+          - "kinematics"
+          - "joints"
+          - "contact"
+          - "flexible"
+          - "system"
+          - "core kinematics"
+          - "core joints"
+          - "core contact"
+          - "core flexible"
+          - "core system"
+          - "kinematics joints"
+          - "kinematics contact"
+          - "kinematics flexible"
+          - "kinematics system"
+          - "joints contact"
+          - "joints flexible"
+          - "joints system"
+          - "contact flexible"
+          - "contact system"
+          - "flexible system"
+          - "all"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check -p tpt-mbd --features "${{ matrix.features }}"

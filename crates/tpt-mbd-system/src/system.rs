@@ -70,7 +70,7 @@ pub struct MultibodySystem {
     /// Total number of generalized coordinates (recomputed by `count_dofs`).
     pub num_dofs: usize,
     /// Body index pairs corresponding to each entry in `joints`.
-    joint_body_pairs: Vec<(usize, usize)>,
+    pub(crate) joint_body_pairs: Vec<(usize, usize)>,
 }
 
 impl MultibodySystem {
@@ -201,10 +201,102 @@ impl MultibodySystem {
         let sm = &inertia.matrix;
         Matrix::from_fn(6, 6, |i, j| sm.data[i][j])
     }
+
+    /// Compute inverse dynamics: generalized forces `τ = M·q̈`.
+    ///
+    /// This is a minimal implementation that returns `M * qddot`.
+    /// Gravity, Coriolis/centrifugal, and external forces are not yet
+    /// included.
+    pub fn inverse_dynamics(&self, qddot: &[f64]) -> Vec<f64> {
+        let m = self.build_mass_matrix();
+        let n = self.num_dofs.max(1);
+        let mut tau = vec![0.0f64; n];
+        for i in 0..n {
+            for j in 0..qddot.len().min(n) {
+                tau[i] += m[(i, j)] * qddot[j];
+            }
+        }
+        tau
+    }
 }
 
 impl Default for MultibodySystem {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tpt_math_linalg_fixed::{Matrix3, Vector3};
+    use tpt_mbd_core::frame::Isometry3;
+    use tpt_mbd_core::{RigidBody, SpatialInertia};
+    use tpt_mbd_joints::joint::JointType;
+
+    #[test]
+    fn builder_empty_produces_valid_system() {
+        let sys = crate::builder::MultibodySystemBuilder::new().build();
+        assert_eq!(sys.bodies.len(), 0);
+        assert_eq!(sys.num_dofs, 0);
+    }
+
+    #[test]
+    fn builder_add_body() {
+        let si = SpatialInertia::new(
+            1.0,
+            Vector3::new([0.0, 0.0, 0.0]),
+            Matrix3::new([[1.0; 3]; 3]),
+        );
+        let body = RigidBody::new(si, Isometry3::identity(), "link0", 0);
+        let sys = crate::builder::MultibodySystemBuilder::new()
+            .add_body(body)
+            .build();
+        assert_eq!(sys.bodies.len(), 1);
+        assert_eq!(sys.num_dofs, 6);
+    }
+
+    #[test]
+    fn builder_add_joint_reduces_dofs() {
+        let si = SpatialInertia::new(
+            1.0,
+            Vector3::new([0.0, 0.0, 0.0]),
+            Matrix3::new([[1.0; 3]; 3]),
+        );
+        let body0 = RigidBody::new(si, Isometry3::identity(), "link0", 0);
+        let body1 = RigidBody::new(
+            SpatialInertia::new(
+                1.0,
+                Vector3::new([0.0, 0.0, 0.0]),
+                Matrix3::new([[1.0; 3]; 3]),
+            ),
+            Isometry3::identity(),
+            "link1",
+            1,
+        );
+        let sys = crate::builder::MultibodySystemBuilder::new()
+            .add_body(body0)
+            .add_body(body1)
+            .add_joint(JointType::REVOLUTE, 0, 1)
+            .build();
+        assert_eq!(sys.bodies.len(), 2);
+        assert_eq!(sys.joints.len(), 1);
+        assert_eq!(sys.num_dofs, 7);
+    }
+
+    #[test]
+    fn vtk_export_contains_header() {
+        let system = MultibodySystem::new();
+        let vtk = crate::vtk::to_vtk(&system);
+        assert!(vtk.contains("# vtk DataFile Version 3.0"));
+        assert!(vtk.contains("DATASET UNSTRUCTURED_GRID"));
+    }
+
+    #[test]
+    fn vtk_export_empty_system() {
+        let system = MultibodySystem::new();
+        let vtk = crate::vtk::to_vtk(&system);
+        assert!(vtk.contains("POINTS 0 float"));
+        assert!(vtk.contains("CELLS 0"));
     }
 }
