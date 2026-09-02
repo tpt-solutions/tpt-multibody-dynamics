@@ -7,7 +7,7 @@ members = [
     "crates/tpt-mbd-flexible",
     "crates/tpt-mbd-joints",
     "crates/tpt-mbd-kinematics",
-    "crates/tpt-mbd-system",
+    "crates/tpt-mbd-system", "crates/tpt-mbd-validation",
 ]
 
 [workspace.package]

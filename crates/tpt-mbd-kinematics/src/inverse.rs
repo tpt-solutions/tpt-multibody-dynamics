@@ -95,6 +95,7 @@ impl IkResult {
 }
 
 /// Solve IK using Newton-Raphson with damped least squares (Levenberg-Marquardt).
+#[allow(clippy::needless_range_loop)]
 pub fn solve_newton_lm(
     links: &[DhLink],
     target: &Isometry3<f64>,
@@ -161,6 +162,7 @@ pub fn solve_newton_lm(
 }
 
 /// Solve IK using the Jacobian transpose method (gradient descent on pose error).
+#[allow(clippy::needless_range_loop)]
 pub fn solve_jacobian_transpose(
     links: &[DhLink],
     target: &Isometry3<f64>,
@@ -332,6 +334,7 @@ impl LoopClosureConstraint {
 /// Uses damped least squares with constraint projection. Each entry in
 /// `chains` is a serial chain; all chains share the same joint vector `q`.
 /// `targets` gives the desired end-effector pose for each chain.
+#[allow(clippy::needless_range_loop)]
 pub fn solve_parallel_ik(
     chains: &[&[DhLink]],
     targets: &[Isometry3<f64>],
@@ -381,9 +384,7 @@ pub fn solve_parallel_ik(
         for c in constraints {
             let err = c.constraint_error(&poses);
             total_error += err.iter().map(|e| e.abs()).sum::<f64>();
-            for j in 0..3 {
-                error_vec[constraint_offset + j] = err[j];
-            }
+            error_vec[constraint_offset..(constraint_offset + 3)].copy_from_slice(&err);
             constraint_offset += 3;
         }
 
@@ -466,7 +467,7 @@ pub fn solve_parallel_ik(
         pos_err += p;
         rot_err += r;
     }
-    if targets.len() > 0 {
+    if !targets.is_empty() {
         pos_err /= targets.len() as f64;
         rot_err /= targets.len() as f64;
     }

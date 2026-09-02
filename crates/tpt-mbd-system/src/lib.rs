@@ -30,6 +30,7 @@
 
 pub mod actuators;
 pub mod builder;
+pub mod dynamics;
 pub mod forces;
 pub mod integration;
 pub mod system;

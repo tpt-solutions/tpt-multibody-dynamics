@@ -27,6 +27,12 @@ tpt-math-numeric = { git = "https://github.com/tpt-solutions/tpt-math.git", pack
 tpt-math-spatial = { git = "https://github.com/tpt-solutions/tpt-math.git", package = "tpt-math-spatial", default-features = false }
 rayon = { version = "1", default-features = false }
 
+[dev-dependencies]
+tpt-mbd-contact = { path = "../tpt-mbd-contact" }
+tpt-mbd-flexible = { path = "../tpt-mbd-flexible" }
+tpt-mbd-joints = { path = "../tpt-mbd-joints", default-features = false }
+tpt-fem-mesh = { git = "https://github.com/tpt-solutions/tpt-fem.git", package = "tpt-fem-mesh", default-features = false }
+
 [lints]
 workspace = true
 

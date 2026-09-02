@@ -37,6 +37,9 @@ pub mod api;
 pub mod builder;
 /// Unified error type and result alias for the `tpt-mbd` ecosystem.
 pub mod error;
+/// OpenGL rendering hooks for real-time animation (requires `render` feature).
+#[cfg(feature = "render")]
+pub mod render;
 
 pub use error::{MbdError, Result};
 
@@ -209,5 +212,47 @@ mod tests {
         use std::any::TypeId;
         use tpt_mbd_system::system::MultibodySystem;
         let _ = TypeId::of::<MultibodySystem>();
+    }
+
+    #[cfg(all(
+        feature = "core",
+        feature = "kinematics",
+        feature = "joints",
+        feature = "contact",
+        feature = "flexible",
+        feature = "system"
+    ))]
+    #[test]
+    fn all_features_compile_together() {
+        use tpt_mbd_contact::contact::{ContactParams, HertzianContact};
+        use tpt_mbd_core::frame::Frame;
+        use tpt_mbd_flexible::cms::CraigBampton;
+        use tpt_mbd_joints::joint::JointDof;
+        use tpt_mbd_kinematics::chain::DhLink;
+        use tpt_mbd_system::system::MultibodySystem;
+        let _ = Frame::identity();
+        let _ = DhLink::new(0.0, 0.0, 0.0, 0.0);
+        let _ = JointDof::Revolute;
+        let _ = HertzianContact::new(ContactParams::default());
+        let _ = CraigBampton::from_fem(
+            &tpt_fem_mesh::MeshBuilder::new().build(),
+            tpt_math_linalg_dense::DMatrix::zeros(0, 0),
+            &[],
+            0,
+        );
+        let _ = MultibodySystem::new();
+    }
+
+    #[cfg(all(
+        feature = "core",
+        not(feature = "kinematics"),
+        not(feature = "joints"),
+        not(feature = "contact"),
+        not(feature = "flexible"),
+        not(feature = "system")
+    ))]
+    #[test]
+    fn core_only_feature_compiles() {
+        let _ = tpt_mbd_core::frame::Frame::identity();
     }
 }

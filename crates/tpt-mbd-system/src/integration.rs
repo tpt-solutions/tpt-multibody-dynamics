@@ -464,4 +464,107 @@ mod tests {
             tau[2]
         );
     }
+
+    #[test]
+    fn verlet_spring_energy_conservation() {
+        let mut sys = MultibodySystem::new();
+        let si = SpatialInertia::new(
+            1.0f64,
+            Vector3::new([0.0f64; 3]),
+            Matrix3::new([[1.0f64; 3]; 3]),
+        );
+        let body = RigidBody::new(si, Isometry3::identity(), "verlet_body", 0);
+        sys.add_body(body);
+        sys.count_dofs();
+
+        let spring = SpringDamper::new(100.0, 0.0, 0.0, 0, 1, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
+        let dt = 0.0005f64;
+        let mut q = vec![0.0f64; sys.num_dofs];
+        q[2] = -0.5;
+        let mut qdot = vec![0.0f64; sys.num_dofs];
+        let e0 = energy(&sys, &q, &qdot);
+
+        for _ in 0..5000 {
+            let tau = spring.force(&sys, &q, &qdot);
+            let (q_new, qdot_new) = Verlet::step(&sys, &q, &qdot, &tau, dt);
+            q = q_new;
+            qdot = qdot_new;
+        }
+
+        let e_final = energy(&sys, &q, &qdot);
+        let rel_error = ((e_final - e0).abs() / e0.abs()).min(1.0);
+        assert!(
+            rel_error < 0.05,
+            "Verlet energy drift {:.4}% exceeds 5% threshold",
+            rel_error * 100.0,
+        );
+    }
+
+    #[test]
+    fn generalized_alpha_energy_dissipation() {
+        let mut sys = MultibodySystem::new();
+        let si = SpatialInertia::new(
+            1.0f64,
+            Vector3::new([0.0f64; 3]),
+            Matrix3::new([[1.0f64; 3]; 3]),
+        );
+        let body = RigidBody::new(si, Isometry3::identity(), "ga_body", 0);
+        sys.add_body(body);
+        sys.count_dofs();
+
+        let spring = SpringDamper::new(100.0, 0.5, 0.0, 0, 1, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
+        let params = IntegratorParams {
+            dt: 0.001,
+            alpha_f: 0.4,
+            alpha_m: 0.2,
+            beta: 0.25,
+            gamma: 0.5,
+        };
+        let mut q = vec![0.0f64; sys.num_dofs];
+        q[2] = -0.5;
+        let mut qdot = vec![0.0f64; sys.num_dofs];
+        let mut qddot = vec![0.0f64; sys.num_dofs];
+        let e0 = energy(&sys, &q, &qdot);
+
+        for _ in 0..2000 {
+            let tau = spring.force(&sys, &q, &qdot);
+            let (q_new, qdot_new, qddot_new) =
+                GeneralizedAlpha::step(&sys, &q, &qdot, &qddot, &tau, params.dt, params);
+            q = q_new;
+            qdot = qdot_new;
+            qddot = qddot_new;
+        }
+
+        let e_final = energy(&sys, &q, &qdot);
+        assert!(
+            e_final <= e0,
+            "generalized-α should dissipate energy, but e_final={} > e0={}",
+            e_final,
+            e0
+        );
+    }
+
+    #[test]
+    fn rattle_delegates_to_verlet() {
+        let mut sys = MultibodySystem::new();
+        let si = SpatialInertia::new(
+            1.0f64,
+            Vector3::new([0.0f64; 3]),
+            Matrix3::new([[1.0f64; 3]; 3]),
+        );
+        let body = RigidBody::new(si, Isometry3::identity(), "rattle_body", 0);
+        sys.add_body(body);
+        sys.count_dofs();
+
+        let q = vec![0.0f64; sys.num_dofs];
+        let qdot = vec![0.0f64; sys.num_dofs];
+        let tau = vec![0.0f64; sys.num_dofs];
+        let dt = 0.001;
+
+        let (q_rattle, qdot_rattle) = Rattle::step(&sys, &q, &qdot, &tau, dt);
+        let (q_verlet, qdot_verlet) = Verlet::step(&sys, &q, &qdot, &tau, dt);
+
+        assert_eq!(q_rattle, q_verlet);
+        assert_eq!(qdot_rattle, qdot_verlet);
+    }
 }

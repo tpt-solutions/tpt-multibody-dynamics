@@ -8,11 +8,30 @@
 //! Implements continuous and discrete collision detection (GJK/EPA),
 //! Hertzian and penalty contact force models, Coulomb friction, impact
 //! handling, complementarity-based contact, and Archard wear.
+//!
+//! # Examples
+//!
+//! ```
+//! use tpt_mbd_contact::contact::{ContactParams, HertzianContact, PenaltyContact};
+//!
+//! let params = ContactParams::default();
+//! let hertz = HertzianContact::new(params);
+//! let force = hertz.force(0.01, 0.0);
+//! assert!(force > 0.0);
+//!
+//! let penalty = PenaltyContact::default();
+//! let force = penalty.force(0.01, 0.0);
+//! assert!(force > 0.0);
+//! ```
 
+pub mod adaptive_stiffness;
+pub mod bvh;
 pub mod ccd;
+pub mod complementarity;
 pub mod contact;
 pub mod detection;
 pub mod friction;
+pub mod gjk;
 pub mod impact;
 pub mod wear;
 

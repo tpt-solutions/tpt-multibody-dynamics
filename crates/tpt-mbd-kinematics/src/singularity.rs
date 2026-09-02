@@ -75,6 +75,7 @@ pub struct WorkspacePoint {
 }
 
 /// Compute the reachable workspace boundary by sampling joint space.
+#[allow(clippy::needless_range_loop)]
 pub fn reachable_workspace_boundary(links: &[DhLink], resolution: usize) -> Vec<WorkspacePoint> {
     let mut boundary = Vec::new();
     let n = links.len();
@@ -128,6 +129,7 @@ fn workspace_point_from_isometry(pose: &Isometry3<f64>) -> WorkspacePoint {
 /// Computes the eigenvalues of `J·Jᵀ` and returns the square root of the
 /// minimum eigenvalue, which equals the minimum singular value of `J`.
 /// A distance of zero indicates a singular configuration.
+#[allow(clippy::needless_range_loop)]
 pub fn distance_to_singularity(links: &[DhLink], joint_angles: &[f64]) -> f64 {
     let jac = geometric_jacobian(links, joint_angles);
     let n = jac.num_joints();
@@ -171,6 +173,7 @@ pub fn distance_to_singularity(links: &[DhLink], joint_angles: &[f64]) -> f64 {
 }
 
 /// Compute all eigenvalues of a symmetric 6×6 matrix using Jacobi rotations.
+#[allow(clippy::needless_range_loop)]
 fn eigenvalues_symmetric_6x6(a: &[[f64; 6]; 6]) -> [f64; 6] {
     let mut a = *a;
     let mut eigenvalues = [0.0f64; 6];

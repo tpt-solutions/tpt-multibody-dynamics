@@ -20,6 +20,17 @@ pub struct SimulationResult {
 /// Compute forward kinematics for a serial chain.
 ///
 /// When the `kinematics` feature is disabled this returns a stub.
+///
+/// # Examples
+///
+/// ```
+/// use tpt_mbd::api::forward_kinematics;
+/// use tpt_mbd_kinematics::chain::DhLink;
+///
+/// let links = vec![DhLink::new(0.0, 0.0, 0.0, 0.0)];
+/// let pose = forward_kinematics(&links, &[0.0]);
+/// assert!(pose.rotation.matrix().data[0][0].is_finite());
+/// ```
 #[cfg(feature = "kinematics")]
 pub fn forward_kinematics(chain: &DhChain, joint_angles: &[f64]) -> Isometry3<f64> {
     chain.forward(joint_angles)
@@ -109,6 +120,20 @@ pub fn inverse_dynamics(
 ///
 /// Requires the `system` feature.  Returns an empty `SimulationResult` until
 /// `tpt-mbd-system` exposes an integrator.
+///
+/// # Examples
+///
+/// ```
+/// use tpt_mbd::api::simulate;
+/// use tpt_mbd_system::builder::MultibodySystemBuilder;
+///
+/// let system = MultibodySystemBuilder::new("test")
+///     .add_body("ground")
+///     .build()
+///     .expect("builder should succeed");
+/// let result = simulate(&system, 1.0, 0.01);
+/// assert!(result.times.is_empty());
+/// ```
 #[cfg(feature = "system")]
 pub fn simulate(system: &MultibodySystem, _t_final: f64, _dt: f64) -> SimulationResult {
     let _ = system;

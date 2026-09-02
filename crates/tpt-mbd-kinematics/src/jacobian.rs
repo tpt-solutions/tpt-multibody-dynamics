@@ -10,6 +10,7 @@ use crate::chain::DhLink;
 ///
 /// The analytical Jacobian maps joint rates to end-effector velocity
 /// (linear + roll-pitch-yaw rates) expressed in the end-effector frame.
+#[allow(clippy::needless_range_loop)]
 pub fn analytical_jacobian(links: &[DhLink], joint_angles: &[f64]) -> AnalyticalJacobian {
     let geo = crate::forward::geometric_jacobian(links, joint_angles);
     let n = geo.num_joints();
@@ -72,6 +73,7 @@ pub fn compute_geometric_jacobian(
 /// Compute the manipulability measure (Yoshikawa's manipulability index).
 ///
 /// `w = sqrt(det(J·Jᵀ))` — a scalar measure of distance to singularities.
+#[allow(clippy::needless_range_loop)]
 pub fn manipulability(jac: &crate::forward::Jacobian) -> f64 {
     let n = jac.num_joints();
     let mut jjt = [[0.0; 6]; 6];
@@ -105,6 +107,7 @@ pub fn manipulability(jac: &crate::forward::Jacobian) -> f64 {
 }
 
 /// Compute the condition number of the Jacobian.
+#[allow(clippy::needless_range_loop)]
 pub fn jacobian_condition_number(jac: &crate::forward::Jacobian) -> f64 {
     let n = jac.num_joints();
     let m = 6.min(n);
@@ -132,6 +135,7 @@ pub fn jacobian_condition_number(jac: &crate::forward::Jacobian) -> f64 {
 }
 
 /// Simple 6×6 determinant via cofactor expansion (only for the 6×6 case).
+#[allow(clippy::let_and_return)]
 fn determinant_6x6(m: &[[f64; 6]; 6]) -> f64 {
     let det = m[0][0]
         * (m[1][1]
@@ -170,4 +174,66 @@ fn determinant_6x6(m: &[[f64; 6]; 6]) -> f64 {
                     - m[2][1] * m[3][4] * m[4][2] * m[5][3]
                     - m[2][2] * m[3][1] * m[4][3] * m[5][4]));
     det
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn analytical_jacobian_shape() {
+        let links = vec![
+            DhLink::new(0.0, 0.0, 0.24336, 0.0),
+            DhLink::new(0.280, 0.0, 0.0, 0.0),
+        ];
+        let q = vec![0.1, -0.2];
+        let aj = analytical_jacobian(&links, &q);
+        assert_eq!(aj.num_joints(), 2);
+        assert_eq!(aj.angular_column(0).len(), 3);
+        assert_eq!(aj.linear_column(0).len(), 3);
+    }
+
+    #[test]
+    fn manipulability_non_negative_simple_chain() {
+        let links = vec![
+            DhLink::new(0.0, 0.0, 0.24336, 0.0),
+            DhLink::new(0.280, 0.0, 0.0, 0.0),
+        ];
+        let q = vec![0.1, -0.2];
+        let jac = crate::forward::geometric_jacobian(&links, &q);
+        let m = manipulability(&jac);
+        assert!(m >= 0.0, "manipulability must be non-negative, got {}", m);
+    }
+
+    #[test]
+    fn manipulability_zero_at_singular_2dof() {
+        let links = vec![
+            DhLink::new(0.0, 0.0, 0.0, 0.0),
+            DhLink::new(1.0, 0.0, 0.0, 0.0),
+        ];
+        let q = vec![0.0, 0.0];
+        let jac = crate::forward::geometric_jacobian(&links, &q);
+        let m = manipulability(&jac);
+        assert!(
+            m < 1e-6,
+            "manipulability should be near-zero at singularity, got {}",
+            m
+        );
+    }
+
+    #[test]
+    fn condition_number_finite() {
+        let links = vec![
+            DhLink::new(0.0, 0.0, 0.24336, 0.0),
+            DhLink::new(0.280, 0.0, 0.0, 0.0),
+        ];
+        let q = vec![0.1, -0.2];
+        let jac = crate::forward::geometric_jacobian(&links, &q);
+        let cn = jacobian_condition_number(&jac);
+        assert!(
+            cn.is_finite(),
+            "condition number must be finite, got {}",
+            cn
+        );
+    }
 }

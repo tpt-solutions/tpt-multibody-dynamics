@@ -13,6 +13,7 @@ use alloc::vec::Vec;
 
 use crate::constraint::JointConstraint;
 use crate::joint::JointType;
+use num_traits::Float;
 
 /// A minimal-coordinate (reduced) formulation for a multibody system.
 ///
@@ -164,7 +165,7 @@ impl MaximalCoordinateFormulation {
     pub fn violation(&self, q: &[f64]) -> f64 {
         let phi = self.constraint_vector(q);
         let sum: f64 = phi.iter().map(|x| x * x).sum();
-        sum.sqrt()
+        Float::sqrt(sum)
     }
 }
 

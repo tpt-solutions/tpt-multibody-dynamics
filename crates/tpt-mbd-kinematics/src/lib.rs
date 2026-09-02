@@ -1,6 +1,5 @@
 #![doc = include_str!("../../../README.md")]
 #![allow(missing_docs)]
-#![allow(clippy::all)]
 #![forbid(unsafe_code)]
 
 //! Forward and inverse kinematics for serial and parallel kinematic chains.

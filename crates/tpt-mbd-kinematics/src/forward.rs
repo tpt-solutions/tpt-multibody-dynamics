@@ -160,4 +160,23 @@ mod tests {
         let jac = geometric_jacobian(&links, &[]);
         assert_eq!(jac.num_joints(), 1);
     }
+
+    #[test]
+    fn forward_kinematics_identity_chain() {
+        let links = vec![DhLink::new(0.0, 0.0, 0.0, 0.0); 3];
+        let q = vec![0.1, -0.2, 0.3];
+        let pose = forward_kinematics(&links, &q);
+        assert!(pose.rotation.matrix().data[0][0].is_finite());
+    }
+
+    #[test]
+    fn jacobian_linear_column_at_origin() {
+        let links = vec![
+            DhLink::new(0.0, 0.0, 0.1, 0.0),
+            DhLink::new(0.2, 0.0, 0.0, 0.0),
+        ];
+        let jac = geometric_jacobian(&links, &[0.0, 0.0]);
+        let lin0 = jac.linear_column(0);
+        assert_eq!(lin0.len(), 3);
+    }
 }
